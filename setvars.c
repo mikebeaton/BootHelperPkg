@@ -44,7 +44,13 @@ EFI_STATUS EFIAPI efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTabl
     //EFI_BOOT_SERVICES* bt;
 
     InitializeLib(ImageHandle, SystemTable);
-    Print(L"Hello, World!\n");
+
+    SIMPLE_TEXT_OUTPUT_INTERFACE *conOut = SystemTable->ConOut;
+
+    EFI_STATUS status;
+    status = uefi_call_wrapper(conOut->SetMode, 2, conOut, 0);
+
+    Print(L" == Big Sur Boot Helper ==\n");
     rt = SystemTable->RuntimeServices;
     //bt = SystemTable->BootServices;
 
@@ -59,7 +65,6 @@ EFI_STATUS EFIAPI efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTabl
     UINT32 attr;
     UINT32 data_size = 512;
     CHAR16 data[512];
-    EFI_STATUS status;
 
     status = uefi_call_wrapper(rt->GetVariable, 5, name, &appleGUID, &attr, &data_size, &data);
     Print(L"Status: %d\n", status);
@@ -67,8 +72,11 @@ EFI_STATUS EFIAPI efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTabl
     Print(L"attr: %x\n", attr);
     Print(L"char[0]: %d\n", (UINT32)data[0]);
 
-    SIMPLE_TEXT_OUTPUT_INTERFACE *conOut = SystemTable->ConOut;
     uefi_call_wrapper(conOut->OutputString, 2, conOut, L"Example text\n");
+
+    UINTN Columns, Rows;
+    status = uefi_call_wrapper(conOut->QueryMode, 4, conOut, 0, &Columns, &Rows);
+    Print(L"Mode 0, status %d, columnsxrows = %dx%d", status, Columns, Rows);
 
     EFI_INPUT_KEY key;
 
@@ -79,13 +87,17 @@ EFI_STATUS EFIAPI efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTabl
         Print(L"Got key %c\n", key.UnicodeChar);
 	switch (key.UnicodeChar)
 	{
-		case L'r':
-			Print(L"Reboot?");
-			break;
+            case L'r':
+                Print(L"Reboot?");
+                break;
 
-		case L's':
-			Print(L"Shutdown?");
-			break;
+            case L's':
+                Print(L"Shutdown?");
+                break;
+
+            case L'q':
+                uefi_call_wrapper(rt->ResetSystem, 4, EfiResetWarm, EFI_SUCCESS, 0, NULL);
+                break;
 	}
     }
 
