@@ -1,7 +1,6 @@
 #include <efi.h>
 #include <efilib.h>
 
-
 // ReadKeyStroke returns EFI_NOT_READY if no key available
 // ReadKeyStroke returns EFI_SUCCESS if a key is available
 // It will not wait for a key to be available.
@@ -17,66 +16,126 @@ EFI_STATUS getkeystroke(EFI_SYSTEM_TABLE *SystemTable, EFI_INPUT_KEY *Key)
     return uefi_call_wrapper(SystemTable->ConIn->ReadKeyStroke, 2, SystemTable->ConIn, Key);
 }
 
+#define BUF_SIZE 255
+
+CHAR16 hexDigit(CHAR8 val)
+{
+    val &= 0xF;
+    
+    if (val < 10) return val + '0';
+    else return val - 10 + 'a';
+}
+
+void string8to16(const CHAR8* in, CHAR16* out, UINTN size, BOOLEAN isString)
+{
+    if (size > BUF_SIZE) size = BUF_SIZE;
+
+    UINTN o = 0;
+    for (UINTN i = 0; i < size; i++)
+    {
+        CHAR8 c = in[i];
+        if (isString && c == 0) break;
+        if (isString && c >= 32 && c < 127) out[o++] = in[i];
+        else
+        {
+            out[o++] = '%';
+            out[o++] = hexDigit(in[i] >> 4);
+            out[o++] = hexDigit(in[i] & 0xF);
+        }
+    }
+    out[o] = 0;
+}
+
+void string16to8(const CHAR16* in, CHAR8* out, UINTN size)
+{
+    if (size > BUF_SIZE) size = BUF_SIZE;
+
+    for (UINTN i = 0; i < size; i++)
+    {
+        out[i] = in[i];
+    }
+    out[size] = 0;
+}
+
+static EFI_GUID appleGUID = {0x7c436110, 0xab2a, 0x4bbb, {0xa8, 0x80, 0xfe, 0x41, 0x99, 0x5c, 0x9f, 0x82}};
+
+static EFI_RUNTIME_SERVICES* rt;
+static EFI_BOOT_SERVICES* bt;
+
+void DisplayNvramValue(CHAR16 *varName, BOOLEAN isString)
+{
+    // + 1 for \0 terminators
+    CHAR8 buffer8[BUF_SIZE + 1];
+    CHAR16 buffer16[3 * BUF_SIZE + 1];
+
+    UINT32 attr;
+    UINT32 data_size = BUF_SIZE;
+
+    EFI_STATUS status;
+
+    status = uefi_call_wrapper(rt->GetVariable, 5, varName, &appleGUID, &attr, &data_size, &buffer8);
+    if (status == EFI_SUCCESS)
+    {
+        string8to16(buffer8, buffer16, data_size, isString);
+        Print(L"%s=\"%s\"\n", varName, &buffer16);
+        Print(L"    size: %d\n", data_size);
+        Print(L"    attr: %d\n", attr);
+        Print(L"     hex: 0x%08x\n", ((UINT32*)buffer8)[0]);
+    }
+    else if (status == EFI_BUFFER_TOO_SMALL)
+    {
+        Print(L"%s: EFI_BUFFER_TOO_SMALL(%d > %d)\n", varName, data_size, BUF_SIZE);
+        Print(L"    attr: %x\n", attr);
+    }
+    else if (status == EFI_NOT_FOUND)
+    {
+        Print(L"%s: EFI_NOT_FOUND\n", varName);
+    }
+    else
+    {
+        Print(L"%s: EFI_UNKOWN_STATUS=%d\n", varName, status);
+    }
+}
+
+void SetBootArgs()
+{
+    UINT32 flags = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE;
+    CHAR8 bootArgsVal[] = "-no_compat_check";
+    uefi_call_wrapper(rt->SetVariable, 5, L"boot-args", &appleGUID, flags, sizeof(bootArgsVal), bootArgsVal);
+}
+
 
 EFI_STATUS EFIAPI efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
-    /* Making bootArgs[] static keeps it contiguous within the compiled binary.
-     * This might be good in case there's a need later to do binary patching
-     * of some kind later. It certainly does no harm that I can see.
-     */
-    //static char bootArgs[] = "-no_compat_check";
-
-    /* 'w' (0x77) disables SIP; 0x08 disables authenticated root */
-    /* As of Big Sur beta 9 (or maybe beta 7), 0x7f not 0x77     */
-    //static const char csrVal[4] = {0x7f, 0x08, 0x00, 0x00};
-
-    /* 1-char array rather than just a char variable, so that I can
-     * treat it the same way as the others when calling
-     * rt->SetVariable().
-     *
-     * 0x01 enables TRIM even on non-Apple SSDs, like `trimforce enable`.
-     */
-    //static const char trimSetting[1] = {0x01};
-
-    EFI_GUID appleGUID = {0x7c436110, 0xab2a, 0x4bbb, {0xa8, 0x80, 0xfe, 0x41, 0x99, 0x5c, 0x9f, 0x82}};
-    //const UINT32 flags = EFI_VARIABLE_BOOTSERVICE_ACCESS|EFI_VARIABLE_RUNTIME_ACCESS|EFI_VARIABLE_NON_VOLATILE;
-
-    EFI_RUNTIME_SERVICES* rt;
-    //EFI_BOOT_SERVICES* bt;
-
     InitializeLib(ImageHandle, SystemTable);
 
+    // Might need HandleProtocol to get this?
     SIMPLE_TEXT_OUTPUT_INTERFACE *conOut = SystemTable->ConOut;
 
     EFI_STATUS status;
     status = uefi_call_wrapper(conOut->SetMode, 2, conOut, 0);
 
     Print(L" == Big Sur Boot Helper ==\n");
+
+    // globals
     rt = SystemTable->RuntimeServices;
-    //bt = SystemTable->BootServices;
+    bt = SystemTable->BootServices;
 
     //uefi_call_wrapper(rt->SetVariable, 5, L"csr-active-config", &appleGUID, flags, 4, csrVal);
-    //uefi_call_wrapper(rt->SetVariable, 5, L"boot-args", &appleGUID, flags, sizeof(bootArgs), bootArgs);
     //uefi_call_wrapper(rt->SetVariable, 5, L"EnableTRIM", &appleGUID, flags, 1, trimSetting);
 
     //uefi_call_wrapper(rt->ResetSystem, 4, EfiResetShutdown, EFI_SUCCESS, 0, NULL);
 
-    CHAR16 name[] = L"boot-args";
     //efi_guid_t guid = EFI_GLOBAL_VARIABLE_GUID;
-    UINT32 attr;
-    UINT32 data_size = 512;
-    CHAR16 data[512];
 
-    status = uefi_call_wrapper(rt->GetVariable, 5, name, &appleGUID, &attr, &data_size, &data);
-    Print(L"Status: %d\n", status);
-    Print(L"data_size: %d\n", data_size);
-    Print(L"attr: %x\n", attr);
-    Print(L"char[0]: %d\n", (UINT32)data[0]);
+    DisplayNvramValue(L"boot-args", TRUE);
+    DisplayNvramValue(L"csr-active-config", FALSE);
 
-    uefi_call_wrapper(conOut->OutputString, 2, conOut, L"Example text\n");
+    uefi_call_wrapper(conOut->OutputString, 2, conOut, L"Example text\n\n");
 
     UINTN Columns, Rows;
     status = uefi_call_wrapper(conOut->QueryMode, 4, conOut, 0, &Columns, &Rows);
-    Print(L"Mode 0, status %d, columnsxrows = %dx%d", status, Columns, Rows);
+    Print(L"Mode 0, status %d, columnsxrows = %dx%d\n", status, Columns, Rows);
+    Print(L"\n[R]eboot; Set [B]oot-args and reboot; [S]hutdown; e[X]it\n", status, Columns, Rows);
 
     EFI_INPUT_KEY key;
 
@@ -84,22 +143,28 @@ EFI_STATUS EFIAPI efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTabl
     {
         Print(L"Wait for key...\n");
         getkeystroke(SystemTable, &key);
-        Print(L"Got key %c\n", key.UnicodeChar);
-	switch (key.UnicodeChar)
-	{
+        Print(L"Got key %c (%x)\n", key.UnicodeChar, key.UnicodeChar);
+
+        CHAR16 c = key.UnicodeChar;
+        if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a';
+
+        switch (c)
+        {
             case L'r':
-                Print(L"Reboot?");
+                uefi_call_wrapper(rt->ResetSystem, 4, EfiResetWarm, EFI_SUCCESS, 0, NULL);
+                break;
+
+            case L'b':
+                SetBootArgs();
+                uefi_call_wrapper(rt->ResetSystem, 4, EfiResetWarm, EFI_SUCCESS, 0, NULL);
                 break;
 
             case L's':
-                Print(L"Shutdown?");
+                uefi_call_wrapper(rt->ResetSystem, 4, EfiResetShutdown, EFI_SUCCESS, 0, NULL);
                 break;
 
-            case L'q':
-                uefi_call_wrapper(rt->ResetSystem, 4, EfiResetWarm, EFI_SUCCESS, 0, NULL);
-                break;
-	}
+            case L'x':
+                return EFI_SUCCESS;
+        }
     }
-
-    return EFI_SUCCESS;
 }
