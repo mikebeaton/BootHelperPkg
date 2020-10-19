@@ -24,7 +24,7 @@ make clobber
 make
 setarch i386 make
 
-for x in setvars
+for x in macnvbh
 do
     grub-glue-efi -3 $x-ia32.efi -6 $x-x86_64.efi -o $x.efi
 done
@@ -32,6 +32,6 @@ done
 mkdir -p EFI/boot
 cp *.efi EFI/boot
 
-mv setvars-x86_64.efi EFI/boot/bootx64.efi
-mv setvars-ia32.efi EFI/boot/bootia32.efi
-mv setvars.efi EFI/boot/boot.efi
+mv macnvbh-x86_64.efi EFI/boot/bootx64.efi
+mv macnvbh-ia32.efi EFI/boot/bootia32.efi
+mv macnvbh.efi EFI/boot/boot.efi

@@ -8,7 +8,7 @@
 
 ARCH            = $(shell uname -m | sed s,i[3456789]86,ia32,)
 
-TARGET          = setvars.efi
+TARGET          = macnvbh.efi
 
 EFIINC          = /usr/include/efi
 EFIINCS         = -I$(EFIINC) -I$(EFIINC)/$(ARCH) -I$(EFIINC)/protocol

@@ -114,7 +114,7 @@ EFI_STATUS EFIAPI efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTabl
     EFI_STATUS status;
     status = uefi_call_wrapper(conOut->SetMode, 2, conOut, 0);
 
-    Print(L" == Big Sur Boot Helper ==\n");
+    Print(L" == Mac nvRAM Boot Helper ==\n");
 
     // globals
     rt = SystemTable->RuntimeServices;
