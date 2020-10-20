@@ -163,26 +163,8 @@ BOOLEAN TryProtocol(EFI_GUID proto_guid, void** out, const CHAR16* name,
 EFI_STATUS EFIAPI efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
     InitializeLib(ImageHandle, SystemTable);
 
-    //LegacySwitchToTextMode(SystemTable);
-
-#if 1
-    // Might need HandleProtocol to get this?
     conOut = SystemTable->ConOut;
     conIn = SystemTable->ConIn;
-#endif
-
-#if 0
-    Print(L"conOut: %x\n", conOut);
-    Print(L"    conOut->Mode: %x\n", conOut->Mode);
-    Print(L"conIn: %x\n", conIn);
-
-    SIMPLE_TEXT_OUTPUT_INTERFACE *xonOut = NULL;
-    SIMPLE_INPUT_INTERFACE *xonIn = NULL;
-#endif
-
-    //uefi_call_wrapper(conOut->SetMode, 2, conOut, 0);
-    // I think we can clear screen, then switch to viewing text...
-    uefi_call_wrapper(conOut->ClearScreen, 1, conOut);
 
     EFI_GUID guid_conControl = EFI_CONSOLE_CONTROL_PROTOCOL_GUID;
     EFI_CONSOLE_CONTROL_PROTOCOL *conControl = NULL;
@@ -193,90 +175,73 @@ EFI_STATUS EFIAPI efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTabl
         return EFI_SUCCESS;
     }
 
-#if 0
-    EFI_GUID guid_conOut = EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_GUID;
-
-    if (TryProtocol(guid_conOut, (void**)&conOut,
-        L"SIMPLE_TEXT_OUTPUT_PROTOCOL", ImageHandle, SystemTable) != TRUE) {
-        Shutdown();
-        return EFI_SUCCESS;
-    }
-    // Print(L"xonOut: %x\n", xonOut);
-    // Print(L"    xonOut->Mode: %x\n", xonOut->Mode);
-
-    EFI_GUID guid_conIn = EFI_SIMPLE_TEXT_INPUT_PROTOCOL_GUID;
-
-    if (TryProtocol(guid_conIn, (void**)&conIn,
-        L"SIMPLE_TEXT_INPUT_PROTOCOL", ImageHandle, SystemTable) != TRUE) {
-        Shutdown();
-        return EFI_SUCCESS;
-    }
-#endif
-
-    SetColour(EFI_YELLOW);
-    Print(L"NVRAM Boot Helper\n");
-    Print(L"0.0.7\n");
-    SetColour(EFI_WHITE);
-    Print(L"\n");
-
-    // globals
-    rt = SystemTable->RuntimeServices;
-    bt = SystemTable->BootServices;
-
-    //uefi_call_wrapper(rt->SetVariable, 5, L"csr-active-config", &appleGUID, flags, 4, csrVal);
-    //uefi_call_wrapper(rt->SetVariable, 5, L"EnableTRIM", &appleGUID, flags, 1, trimSetting);
-
-    //uefi_call_wrapper(rt->ResetSystem, 4, EfiResetShutdown, EFI_SUCCESS, 0, NULL);
-
-    //efi_guid_t guid = EFI_GLOBAL_VARIABLE_GUID;
-
-    DisplayNvramValue(L"boot-args", TRUE);
-    DisplayNvramValue(L"csr-active-config", FALSE);
-
-#if 0
-    UINTN Columns, Rows;
-    EFI_STATUS status = uefi_call_wrapper(conOut->QueryMode, 4, conOut, 0, &Columns, &Rows);
-    Print(L"Mode 0, status %d, columnsxrows = %dx%d\n", status, Columns, Rows);
-#endif
-
-    SetColour(EFI_LIGHTRED);
-    Print(L"\n[R]eboot; Set [B]oot-args and reboot; [S]hutdown; e[X]it\n");
-    SetColour(EFI_WHITE);
-
     uefi_call_wrapper(conControl->SetMode, 2, conControl, EfiConsoleControlScreenText);
-
-    EFI_INPUT_KEY key;
 
     for (;;)
     {
-        //Print(L"Wait for key...\n");
-        getkeystroke(SystemTable, &key);
-        //Print(L"Got key %c (%x)\n", key.UnicodeChar, key.UnicodeChar);
+        // inter alia, we want to clear the other stuff on the hidden text screen, before switching to viewing the text...
+        uefi_call_wrapper(conOut->ClearScreen, 1, conOut);
 
-        CHAR16 c = key.UnicodeChar;
-        if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a';
+        SetColour(EFI_YELLOW);
+        Print(L"NVRAM Boot Helper\n");
+        Print(L"0.0.7\n");
+        SetColour(EFI_WHITE);
+        Print(L"\n");
 
-        if (c == L'r')
+        // globals
+        rt = SystemTable->RuntimeServices;
+        bt = SystemTable->BootServices;
+
+        //uefi_call_wrapper(rt->SetVariable, 5, L"csr-active-config", &appleGUID, flags, 4, csrVal);
+        //uefi_call_wrapper(rt->SetVariable, 5, L"EnableTRIM", &appleGUID, flags, 1, trimSetting);
+
+        //uefi_call_wrapper(rt->ResetSystem, 4, EfiResetShutdown, EFI_SUCCESS, 0, NULL);
+
+        //efi_guid_t guid = EFI_GLOBAL_VARIABLE_GUID;
+
+        DisplayNvramValue(L"boot-args", TRUE);
+        DisplayNvramValue(L"csr-active-config", FALSE);
+
+        SetColour(EFI_LIGHTRED);
+        Print(L"\nSet [B]oot-args; Set [C]sr-active-config; [R]eboot; [S]hutdown; E[x]it\n");
+        SetColour(EFI_WHITE);
+
+        EFI_INPUT_KEY key;
+
+        for (;;)
         {
-            Reboot();
-            break;
-        }
-        else if (c == L'b')
-        {
-            SetBootArgs();
-            Reboot();
-            break;
-        }
-        else if (c == L's')
-        {
-            Shutdown();
-            break;
-        }
-        else if (c == L'x')
-        {
-            break;
+            //Print(L"Wait for key...\n");
+            getkeystroke(SystemTable, &key);
+            //Print(L"Got key %c (%x)\n", key.UnicodeChar, key.UnicodeChar);
+
+            CHAR16 c = key.UnicodeChar;
+            if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a';
+
+            if (c == L'b')
+            {
+                SetBootArgs();
+                break;
+            }
+            else if (c == L'c')
+            {
+                //SetBootArgs();
+                //Reboot();
+                break;
+            }
+            else if (c == L'r')
+            {
+                Reboot();
+                break;
+            }
+            else if (c == L's')
+            {
+                Shutdown();
+                break;
+            }
+            else if (c == L'x')
+            {
+                return EFI_SUCCESS;
+            }
         }
     }
-
-    return EFI_SUCCESS;
 }
