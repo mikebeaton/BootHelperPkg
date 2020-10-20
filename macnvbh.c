@@ -1,5 +1,6 @@
 #include <efi.h>
 #include <efilib.h>
+#include <ConsoleControl.h>
 
 static EFI_RUNTIME_SERVICES* rt = NULL;
 static EFI_BOOT_SERVICES* bt = NULL;
@@ -9,6 +10,7 @@ SIMPLE_INPUT_INTERFACE *conIn = NULL;
 
 #define PRINT_BUF_SIZE 1024
 
+#if 0
 void MyPrint(CONST CHAR16 *format, ...)
 {
     CHAR16 buffer[PRINT_BUF_SIZE];
@@ -17,6 +19,12 @@ void MyPrint(CONST CHAR16 *format, ...)
     VSPrint(buffer, PRINT_BUF_SIZE, format, args);
     va_end(args);
     uefi_call_wrapper(conOut->OutputString, 2, conOut, buffer);
+}
+#endif
+
+EFI_STATUS SetColour(UINTN Attribute)
+{
+    return uefi_call_wrapper(conOut->SetAttribute, 2, conOut, Attribute);
 }
 
 // ReadKeyStroke returns EFI_NOT_READY if no key available
@@ -102,23 +110,23 @@ void DisplayNvramValue(CHAR16 *varName, BOOLEAN isString)
     if (status == EFI_SUCCESS)
     {
         string8to16(buffer8, buffer16, data_size, isString);
-        MyPrint(L"%s=\"%s\"\n", varName, &buffer16);
-        MyPrint(L"    size: %d\n", data_size);
-        MyPrint(L"    attr: %d\n", attr);
-        MyPrint(L"     hex: 0x%08x\n", ((UINT32*)buffer8)[0]);
+        Print(L"%s=\"%s\"\n", varName, &buffer16);
+        //Print(L"    size: %d\n", data_size);
+        //Print(L"    attr: %d\n", attr);
+        if (!isString) Print(L"     hex: 0x%08x\n", ((UINT32*)buffer8)[0]);
     }
     else if (status == EFI_BUFFER_TOO_SMALL)
     {
-        MyPrint(L"%s: EFI_BUFFER_TOO_SMALL(%d > %d)\n", varName, data_size, BUF_SIZE);
-        MyPrint(L"    attr: %x\n", attr);
+        Print(L"%s: EFI_BUFFER_TOO_SMALL(%d > %d)\n", varName, data_size, BUF_SIZE);
+        //Print(L"    attr: %x\n", attr);
     }
     else if (status == EFI_NOT_FOUND)
     {
-        MyPrint(L"%s: EFI_NOT_FOUND\n", varName);
+        Print(L"%s: EFI_NOT_FOUND\n", varName);
     }
     else
     {
-        MyPrint(L"%s: EFI_UNKOWN_STATUS=%d\n", varName, status);
+        Print(L"%s: EFI_UNKOWN_STATUS=%d\n", varName, status);
     }
 }
 
@@ -129,7 +137,7 @@ void SetBootArgs()
     uefi_call_wrapper(rt->SetVariable, 5, L"boot-args", &appleGUID, flags, sizeof(bootArgsVal), bootArgsVal);
 }
 
-#if 0
+#if 1
 BOOLEAN TryProtocol(EFI_GUID proto_guid, void** out, const CHAR16* name,
     EFI_HANDLE imageHandle, EFI_SYSTEM_TABLE* systemTable) {
 
@@ -141,11 +149,11 @@ BOOLEAN TryProtocol(EFI_GUID proto_guid, void** out, const CHAR16* name,
         &proto_guid, NULL, &interface);
 
     if (EFI_ERROR(status)) {
-        //MyPrint(L"LocateProtocol error for %s: %r\n", name, status);
+        //Print(L"LocateProtocol error for %s: %r\n", name, status);
         return FALSE;
     }
 
-    //MyPrint(L"Locate protocol address: %s, %x\n", name, interface);
+    //Print(L"Locate protocol address: %s, %x\n", name, interface);
     *out = interface;
 
     return TRUE;
@@ -155,6 +163,8 @@ BOOLEAN TryProtocol(EFI_GUID proto_guid, void** out, const CHAR16* name,
 EFI_STATUS EFIAPI efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
     InitializeLib(ImageHandle, SystemTable);
 
+    //LegacySwitchToTextMode(SystemTable);
+
 #if 1
     // Might need HandleProtocol to get this?
     conOut = SystemTable->ConOut;
@@ -162,13 +172,26 @@ EFI_STATUS EFIAPI efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTabl
 #endif
 
 #if 0
-    MyPrint(L"conOut: %x\n", conOut);
-    MyPrint(L"    conOut->Mode: %x\n", conOut->Mode);
-    MyPrint(L"conIn: %x\n", conIn);
+    Print(L"conOut: %x\n", conOut);
+    Print(L"    conOut->Mode: %x\n", conOut->Mode);
+    Print(L"conIn: %x\n", conIn);
 
     SIMPLE_TEXT_OUTPUT_INTERFACE *xonOut = NULL;
     SIMPLE_INPUT_INTERFACE *xonIn = NULL;
 #endif
+
+    //uefi_call_wrapper(conOut->SetMode, 2, conOut, 0);
+    // I think we can clear screen, then switch to viewing text...
+    uefi_call_wrapper(conOut->ClearScreen, 1, conOut);
+
+    EFI_GUID guid_conControl = EFI_CONSOLE_CONTROL_PROTOCOL_GUID;
+    EFI_CONSOLE_CONTROL_PROTOCOL *conControl = NULL;
+
+    if (TryProtocol(guid_conControl, (void**)&conControl,
+        L"CONSOLE_CONTROL_PROTOCOL", ImageHandle, SystemTable) != TRUE) {
+        SetBootArgs();
+        return EFI_SUCCESS;
+    }
 
 #if 0
     EFI_GUID guid_conOut = EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL_GUID;
@@ -178,8 +201,8 @@ EFI_STATUS EFIAPI efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTabl
         Shutdown();
         return EFI_SUCCESS;
     }
-    // MyPrint(L"xonOut: %x\n", xonOut);
-    // MyPrint(L"    xonOut->Mode: %x\n", xonOut->Mode);
+    // Print(L"xonOut: %x\n", xonOut);
+    // Print(L"    xonOut->Mode: %x\n", xonOut->Mode);
 
     EFI_GUID guid_conIn = EFI_SIMPLE_TEXT_INPUT_PROTOCOL_GUID;
 
@@ -190,11 +213,11 @@ EFI_STATUS EFIAPI efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTabl
     }
 #endif
 
-    EFI_STATUS status;
-    //status = uefi_call_wrapper(conOut->SetMode, 2, conOut, 0);
-    status = uefi_call_wrapper(conOut->ClearScreen, 1, conOut);
-
-    MyPrint(L" == Mac nvRAM Boot Helper v0.0.6 ==\n");
+    SetColour(EFI_YELLOW);
+    Print(L"NVRAM Boot Helper\n");
+    Print(L"0.0.7\n");
+    SetColour(EFI_WHITE);
+    Print(L"\n");
 
     // globals
     rt = SystemTable->RuntimeServices;
@@ -210,20 +233,25 @@ EFI_STATUS EFIAPI efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTabl
     DisplayNvramValue(L"boot-args", TRUE);
     DisplayNvramValue(L"csr-active-config", FALSE);
 
-    uefi_call_wrapper(conOut->OutputString, 2, conOut, L"Example text\n\n");
-
+#if 0
     UINTN Columns, Rows;
-    status = uefi_call_wrapper(conOut->QueryMode, 4, conOut, 0, &Columns, &Rows);
-    MyPrint(L"Mode 0, status %d, columnsxrows = %dx%d\n", status, Columns, Rows);
-    MyPrint(L"\n[R]eboot; Set [B]oot-args and reboot; [S]hutdown; e[X]it\n", status, Columns, Rows);
+    EFI_STATUS status = uefi_call_wrapper(conOut->QueryMode, 4, conOut, 0, &Columns, &Rows);
+    Print(L"Mode 0, status %d, columnsxrows = %dx%d\n", status, Columns, Rows);
+#endif
+
+    SetColour(EFI_LIGHTRED);
+    Print(L"\n[R]eboot; Set [B]oot-args and reboot; [S]hutdown; e[X]it\n");
+    SetColour(EFI_WHITE);
+
+    uefi_call_wrapper(conControl->SetMode, 2, conControl, EfiConsoleControlScreenText);
 
     EFI_INPUT_KEY key;
 
     for (;;)
     {
-        MyPrint(L"Wait for key...\n");
+        //Print(L"Wait for key...\n");
         getkeystroke(SystemTable, &key);
-        MyPrint(L"Got key %c (%x)\n", key.UnicodeChar, key.UnicodeChar);
+        //Print(L"Got key %c (%x)\n", key.UnicodeChar, key.UnicodeChar);
 
         CHAR16 c = key.UnicodeChar;
         if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a';

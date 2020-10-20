@@ -11,7 +11,7 @@ ARCH            = $(shell uname -m | sed s,i[3456789]86,ia32,)
 TARGET          = macnvbh.efi
 
 EFIINC          = /usr/include/efi
-EFIINCS         = -I$(EFIINC) -I$(EFIINC)/$(ARCH) -I$(EFIINC)/protocol
+EFIINCS         = -I$(EFIINC) -I$(EFIINC)/$(ARCH) -I$(EFIINC)/protocol -I./Include/Intel/Protocol
 LIB             = /usr/lib
 
 ifeq ($(ARCH), x86_64)
