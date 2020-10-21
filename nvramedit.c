@@ -8,6 +8,142 @@ static EFI_BOOT_SERVICES* bt = NULL;
 SIMPLE_TEXT_OUTPUT_INTERFACE *conOut = NULL;
 SIMPLE_INPUT_INTERFACE *conIn = NULL;
 
+CHAR16 HexChar(UINT16 c)
+{
+    if (c < 10) return c + (CHAR16)'0'; 
+    else return c - 10 + (CHAR16)'a';
+}
+
+void DisplayVar(const CHAR8* in, UINTN size, BOOLEAN isString)
+{
+    for (UINTN i = 0; i < size; i++)
+    {
+        CHAR8 c = in[i];
+        if (isString && c >= 32 && c < 127) Print(L"%c", (CHAR16)c);
+        else
+        {
+            Print(L"%%");
+            Print(L"%c", HexChar(in[i] >> (UINT16)4));
+            Print(L"%c", HexChar(in[i] & (UINT16)0xF));
+        }
+    }
+}
+
+EFI_STATUS ListVars()
+{
+
+EFI_STATUS Status;
+EFI_GUID Guid;
+UINTN NameBufferSize;
+UINTN NameSize;
+CHAR16 *Name;
+UINTN DataSize;
+UINT8 *Data;
+
+//Print(L"-a");
+//
+// Initialize the variable name and data buffer variables
+// to retrieve the first variable name in the variable store
+//
+NameBufferSize = sizeof (CHAR16);
+Name = AllocateZeroPool (NameBufferSize);
+
+//
+// Loop through all variables in the variable store
+//
+while (TRUE)
+{
+do {
+//Print(L"-b");
+  //
+  // Loop until a large a large enough variable name buffer is allocated
+  // do {
+  NameSize = NameBufferSize;
+  Status = uefi_call_wrapper(rt->GetNextVariableName, 3, &NameSize, Name, &Guid);
+  if (Status == EFI_BUFFER_TOO_SMALL) {
+//Print(L"-c");
+    //
+    // Grow the buffer Name to NameSize bytes
+    //
+    Name = ReallocatePool(Name, NameBufferSize, NameSize);
+    if (Name == NULL) {
+      return EFI_OUT_OF_RESOURCES;
+    }
+    NameBufferSize = NameSize;
+  }
+//Print(L"-d");
+}
+while (Status == EFI_BUFFER_TOO_SMALL);
+
+//
+// Exit main loop after last variable name is retrieved
+//
+if (EFI_ERROR (Status)) {
+//Print(L"-e");
+  FreePool(Name);
+  return Status;
+}
+
+//
+// Print variable guid and name
+//
+Print(L"%g:%s", &Guid, Name);
+
+//
+// Initialize variable data buffer as an empty buffer
+//
+DataSize = 0;
+Data = NULL;
+
+//
+// Loop until a large enough variable data buffer is allocated
+//
+do {
+  Status = uefi_call_wrapper(rt->GetVariable, 5, Name, &Guid, NULL, &DataSize, Data);
+  if (Status == EFI_BUFFER_TOO_SMALL) {
+//Print(L"-f");
+    //
+    // Allocate new buffer for the variable data
+    //
+    Data = AllocatePool(DataSize);
+    if (Data == NULL) {
+      FreePool(Name);
+      return EFI_OUT_OF_RESOURCES;
+    }
+  }
+//Print(L"-g");
+} while (Status == EFI_BUFFER_TOO_SMALL);
+if (EFI_ERROR (Status)) {
+//Print(L"-h");
+  FreePool(Data);
+  FreePool(Name);
+  return Status;
+}
+
+//Print(L"-i");
+//
+// Print variable data
+//
+#if 1
+Print(L" = \"");
+DisplayVar(Data, DataSize, TRUE);
+Print(L"\"");
+#else
+UINTN Index;
+for (Index = 0; Index < DataSize; Index++) {
+  if ((Index & 0x0f) == 0) {
+    Print(L"\n ");
+  }
+  Print(L"%02x ", Data[Index]);
+}
+#endif
+Print(L"\n");
+//Print(L"-j");
+FreePool(Data);
+
+}
+}
+
 #define PRINT_BUF_SIZE 1024
 
 #if 0
@@ -203,7 +339,7 @@ EFI_STATUS EFIAPI efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTabl
         DisplayNvramValue(L"csr-active-config", FALSE);
 
         SetColour(EFI_LIGHTRED);
-        Print(L"\nSet [B]oot-args; Set [C]sr-active-config; [R]eboot; [S]hutdown; E[x]it\n");
+        Print(L"\n[B]oot-args; [C]sr-active-config; [R]eboot; [S]hutdown; E[x]it; [L]ist\n");
         SetColour(EFI_WHITE);
 
         EFI_INPUT_KEY key;
@@ -238,9 +374,20 @@ EFI_STATUS EFIAPI efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTabl
                 Shutdown();
                 break;
             }
+            else if (c == L'l')
+            {
+                Print(L"Listing...\n");
+                ListVars();
+                Print(L"Listed.\nAny Key...\n");
+                getkeystroke(SystemTable, &key);
+                break;
+            }
             else if (c == L'x')
             {
-                return EFI_SUCCESS;
+                Print(L"Changing mode...");
+                uefi_call_wrapper(conControl->SetMode, 2, conControl, EfiConsoleControlScreenGraphics);
+                Print(L"Exiting...");
+                return 0;
             }
         }
     }
