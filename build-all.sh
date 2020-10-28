@@ -24,7 +24,7 @@ make clobber
 make
 setarch i386 make
 
-for x in boothelper
+for x in BootHelper
 do
     grub-glue-efi -3 $x-ia32.efi -6 $x-x86_64.efi -o $x.efi
 done
@@ -32,6 +32,6 @@ done
 mkdir -p EFI/boot
 cp *.efi EFI/boot
 
-mv boothelper-x86_64.efi EFI/boot/bootx64.efi
-mv boothelper-ia32.efi EFI/boot/bootia32.efi
-mv boothelper.efi EFI/boot/boot.efi
+mv BootHelper-x86_64.efi EFI/boot/bootx64.efi
+mv BootHelper-ia32.efi EFI/boot/bootia32.efi
+mv BootHelper.efi EFI/boot/boot.efi
