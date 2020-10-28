@@ -351,7 +351,7 @@ UefiMain(
 
 		SetColour(EFI_YELLOW);
 		Print(L"macOS Boot Helper\n");
-		Print(L"0.0.8\n");
+		Print(L"0.0.9\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
