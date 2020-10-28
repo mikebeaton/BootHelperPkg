@@ -1,25 +1,3 @@
-/*++
-
-Copyright (c) Alex Ionescu.  All rights reserved.
-
-Module Name:
-
-    shvos.c
-
-Abstract:
-
-    This module implements the OS-facing UEFI stubs for SimpleVisor.
-
-Author:
-
-    Alex Ionescu (@aionescu) 29-Aug-2016 - Initial version
-
-Environment:
-
-    Kernel mode only.
-
---*/
-
 //
 // Basic UEFI Libraries
 //
@@ -119,7 +97,7 @@ EFI_STATUS ListVars()
 			  // Loop until a large a large enough variable name buffer is allocated
 			  // do {
 			NameSize = NameBufferSize;
-			Status = uefi_call_wrapper(rt->GetNextVariableName, 3, &NameSize, Name, &Guid);
+			Status = rt->GetNextVariableName(&NameSize, Name, &Guid);
 			if (Status == EFI_BUFFER_TOO_SMALL) {
 				//Print(L"-c");
 					//
@@ -158,7 +136,7 @@ EFI_STATUS ListVars()
 		// Loop until a large enough variable data buffer is allocated
 		//
 		do {
-			Status = uefi_call_wrapper(rt->GetVariable, 5, Name, &Guid, NULL, &DataSize, Data);
+			Status = rt->GetVariable(Name, &Guid, NULL, &DataSize, Data);
 			if (Status == EFI_BUFFER_TOO_SMALL) {
 				//Print(L"-f");
 					//
@@ -213,13 +191,13 @@ void MyPrint(CONST CHAR16 *format, ...)
 	va_start(args, format);
 	VSPrint(buffer, PRINT_BUF_SIZE, format, args);
 	va_end(args);
-	uefi_call_wrapper(conOut->OutputString, 2, conOut, buffer);
+	conOut->OutputString(conOut, buffer);
 }
 #endif
 
 EFI_STATUS SetColour(UINTN Attribute)
 {
-	return uefi_call_wrapper(conOut->SetAttribute, 2, conOut, Attribute);
+	return conOut->SetAttribute(conOut, Attribute);
 }
 
 // ReadKeyStroke returns EFI_NOT_READY if no key available
@@ -233,8 +211,8 @@ EFI_STATUS kbhit(EFI_SYSTEM_TABLE *SystemTable, EFI_INPUT_KEY *Key)
 // Wait for a key to be available, then read the key using ReadKeyStrokes
 EFI_STATUS getkeystroke(EFI_SYSTEM_TABLE *SystemTable, EFI_INPUT_KEY *Key)
 {
-	uefi_call_wrapper(bt->WaitForEvent, 3, 1, &conIn->WaitForKey, 0);
-	return uefi_call_wrapper(conIn->ReadKeyStroke, 2, conIn, Key);
+	bt->WaitForEvent(1, &conIn->WaitForKey, 0);
+	return conIn->ReadKeyStroke(conIn, Key);
 }
 
 #define BUF_SIZE 255
@@ -280,12 +258,12 @@ void string16to8(const CHAR16* in, CHAR8* out, UINTN size)
 
 void Shutdown()
 {
-	uefi_call_wrapper(rt->ResetSystem, 4, EfiResetShutdown, EFI_SUCCESS, 0, NULL);
+	rt->ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, NULL);
 }
 
 void Reboot()
 {
-	uefi_call_wrapper(rt->ResetSystem, 4, EfiResetWarm, EFI_SUCCESS, 0, NULL);
+	rt->ResetSystem(EfiResetWarm, EFI_SUCCESS, 0, NULL);
 }
 
 static EFI_GUID appleGUID = { 0x7c436110, 0xab2a, 0x4bbb, {0xa8, 0x80, 0xfe, 0x41, 0x99, 0x5c, 0x9f, 0x82} };
@@ -301,7 +279,7 @@ void DisplayNvramValue(CHAR16 *varName, BOOLEAN isString)
 
 	EFI_STATUS status;
 
-	status = uefi_call_wrapper(rt->GetVariable, 5, varName, &appleGUID, &attr, &data_size, &buffer8);
+	status = rt->GetVariable(varName, &appleGUID, &attr, &data_size, &buffer8);
 	if (status == EFI_SUCCESS)
 	{
 		string8to16(buffer8, buffer16, data_size, isString);
@@ -329,7 +307,7 @@ void SetBootArgs()
 {
 	UINT32 flags = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE;
 	CHAR8 bootArgsVal[] = "-no_compat_check";
-	uefi_call_wrapper(rt->SetVariable, 5, L"boot-args", &appleGUID, flags, sizeof(bootArgsVal), bootArgsVal);
+	rt->SetVariable(L"boot-args", &appleGUID, flags, sizeof(bootArgsVal), bootArgsVal);
 }
 
 #if 1
@@ -340,8 +318,7 @@ BOOLEAN TryProtocol(EFI_GUID proto_guid, void** out, const CHAR16* name,
 	EFI_STATUS status;
 	EFI_HANDLE interface = NULL;
 
-	status = uefi_call_wrapper(systemTable->BootServices->LocateProtocol, 3,
-		&proto_guid, NULL, &interface);
+	status = systemTable->BootServices->LocateProtocol(&proto_guid, NULL, &interface);
 
 	if (EFI_ERROR(status)) {
 		//Print(L"LocateProtocol error for %s: %r\n", name, status);
@@ -370,12 +347,12 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
 		return EFI_SUCCESS;
 	}
 
-	uefi_call_wrapper(conControl->SetMode, 2, conControl, EfiConsoleControlScreenText);
+	conControl->SetMode(conControl, EfiConsoleControlScreenText);
 
 	for (;;)
 	{
 		// inter alia, we want to clear the other stuff on the hidden text screen, before switching to viewing the text...
-		uefi_call_wrapper(conOut->ClearScreen, 1, conOut);
+		conOut->ClearScreen(conOut);
 
 		SetColour(EFI_YELLOW);
 		Print(L"macOS Boot Helper\n");
@@ -387,10 +364,10 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
 		rt = SystemTable->RuntimeServices;
 		bt = SystemTable->BootServices;
 
-		//uefi_call_wrapper(rt->SetVariable, 5, L"csr-active-config", &appleGUID, flags, 4, csrVal);
-		//uefi_call_wrapper(rt->SetVariable, 5, L"EnableTRIM", &appleGUID, flags, 1, trimSetting);
+		//rt->SetVariable(L"csr-active-config", &appleGUID, flags, 4, csrVal);
+		//rt->SetVariable(L"EnableTRIM", &appleGUID, flags, 1, trimSetting);
 
-		//uefi_call_wrapper(rt->ResetSystem, 4, EfiResetShutdown, EFI_SUCCESS, 0, NULL);
+		//rt->ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, NULL);
 
 		//efi_guid_t guid = EFI_GLOBAL_VARIABLE_GUID;
 
@@ -444,7 +421,7 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
 			else if (c == L'x')
 			{
 				Print(L"Changing mode...");
-				uefi_call_wrapper(conControl->SetMode, 2, conControl, EfiConsoleControlScreenGraphics);
+				conControl->SetMode(conControl, EfiConsoleControlScreenGraphics);
 				Print(L"Exiting...");
 				return 0;
 			}
