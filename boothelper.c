@@ -319,8 +319,8 @@ EFI_STATUS EFIAPI efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTabl
         uefi_call_wrapper(conOut->ClearScreen, 1, conOut);
 
         SetColour(EFI_YELLOW);
-        Print(L"NVRAM Boot Helper\n");
-        Print(L"0.0.7\n");
+        Print(L"macOS Boot Helper\n");
+        Print(L"0.0.8\n");
         SetColour(EFI_WHITE);
         Print(L"\n");
 

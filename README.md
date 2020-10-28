@@ -1,1 +1,2 @@
-# Mac NVRAM Boot Helper
+# macOS NVRAM Boot Helper
+
