@@ -40,12 +40,6 @@ UefiUnload (
     ASSERT(FALSE);
 }
 
-static EFI_RUNTIME_SERVICES* rt = NULL;
-static EFI_BOOT_SERVICES* bt = NULL;
-
-SIMPLE_TEXT_OUTPUT_INTERFACE *conOut = NULL;
-SIMPLE_INPUT_INTERFACE *conIn = NULL;
-
 CHAR16 HexChar(UINT16 c)
 {
 	if (c < 10) return c + (CHAR16)'0';
@@ -97,13 +91,13 @@ EFI_STATUS ListVars()
 			  // Loop until a large a large enough variable name buffer is allocated
 			  // do {
 			NameSize = NameBufferSize;
-			Status = rt->GetNextVariableName(&NameSize, Name, &Guid);
+			Status = gRT->GetNextVariableName(&NameSize, Name, &Guid);
 			if (Status == EFI_BUFFER_TOO_SMALL) {
 				//Print(L"-c");
 					//
 					// Grow the buffer Name to NameSize bytes
 					//
-				Name = ReallocatePool(Name, NameBufferSize, NameSize);
+				Name = ReallocatePool(NameBufferSize, NameSize, Name);
 				if (Name == NULL) {
 					return EFI_OUT_OF_RESOURCES;
 				}
@@ -136,7 +130,7 @@ EFI_STATUS ListVars()
 		// Loop until a large enough variable data buffer is allocated
 		//
 		do {
-			Status = rt->GetVariable(Name, &Guid, NULL, &DataSize, Data);
+			Status = gRT->GetVariable(Name, &Guid, NULL, &DataSize, Data);
 			if (Status == EFI_BUFFER_TOO_SMALL) {
 				//Print(L"-f");
 					//
@@ -197,7 +191,7 @@ void MyPrint(CONST CHAR16 *format, ...)
 
 EFI_STATUS SetColour(UINTN Attribute)
 {
-	return conOut->SetAttribute(conOut, Attribute);
+	return gST->ConOut->SetAttribute(gST->ConOut, Attribute);
 }
 
 // ReadKeyStroke returns EFI_NOT_READY if no key available
@@ -205,14 +199,14 @@ EFI_STATUS SetColour(UINTN Attribute)
 // It will not wait for a key to be available.
 EFI_STATUS kbhit(EFI_SYSTEM_TABLE *SystemTable, EFI_INPUT_KEY *Key)
 {
-	return conIn->ReadKeyStroke(conIn, Key);
+	return gST->ConIn->ReadKeyStroke(gST->ConIn, Key);
 }
 
 // Wait for a key to be available, then read the key using ReadKeyStrokes
 EFI_STATUS getkeystroke(EFI_SYSTEM_TABLE *SystemTable, EFI_INPUT_KEY *Key)
 {
-	bt->WaitForEvent(1, &conIn->WaitForKey, 0);
-	return conIn->ReadKeyStroke(conIn, Key);
+	gST->BootServices->WaitForEvent(1, &gST->ConIn->WaitForKey, 0);
+	return gST->ConIn->ReadKeyStroke(gST->ConIn, Key);
 }
 
 #define BUF_SIZE 255
@@ -251,19 +245,19 @@ void string16to8(const CHAR16* in, CHAR8* out, UINTN size)
 
 	for (UINTN i = 0; i < size; i++)
 	{
-		out[i] = in[i];
+		out[i] = (CHAR8)in[i];
 	}
 	out[size] = 0;
 }
 
 void Shutdown()
 {
-	rt->ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, NULL);
+	gRT->ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, NULL);
 }
 
 void Reboot()
 {
-	rt->ResetSystem(EfiResetWarm, EFI_SUCCESS, 0, NULL);
+	gRT->ResetSystem(EfiResetWarm, EFI_SUCCESS, 0, NULL);
 }
 
 static EFI_GUID appleGUID = { 0x7c436110, 0xab2a, 0x4bbb, {0xa8, 0x80, 0xfe, 0x41, 0x99, 0x5c, 0x9f, 0x82} };
@@ -275,11 +269,11 @@ void DisplayNvramValue(CHAR16 *varName, BOOLEAN isString)
 	CHAR16 buffer16[3 * BUF_SIZE + 1];
 
 	UINT32 attr;
-	UINT32 data_size = BUF_SIZE;
+	UINTN data_size = BUF_SIZE;
 
 	EFI_STATUS status;
 
-	status = rt->GetVariable(varName, &appleGUID, &attr, &data_size, &buffer8);
+	status = gRT->GetVariable(varName, &appleGUID, &attr, &data_size, &buffer8);
 	if (status == EFI_SUCCESS)
 	{
 		string8to16(buffer8, buffer16, data_size, isString);
@@ -307,7 +301,7 @@ void SetBootArgs()
 {
 	UINT32 flags = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE;
 	CHAR8 bootArgsVal[] = "-no_compat_check";
-	rt->SetVariable(L"boot-args", &appleGUID, flags, sizeof(bootArgsVal), bootArgsVal);
+	gRT->SetVariable(L"boot-args", &appleGUID, flags, sizeof(bootArgsVal), bootArgsVal);
 }
 
 #if 1
@@ -332,27 +326,28 @@ BOOLEAN TryProtocol(EFI_GUID proto_guid, void** out, const CHAR16* name,
 }
 #endif
 
-EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
-	InitializeLib(ImageHandle, SystemTable);
+EFI_STATUS
+EFIAPI
+UefiMain(
+	IN EFI_HANDLE ImageHandle,
+	IN EFI_SYSTEM_TABLE* SystemTable
+)
+{
+	//EFI_GUID guid_conControl = EFI_CONSOLE_CONTROL_PROTOCOL_GUID;
+	//EFI_CONSOLE_CONTROL_PROTOCOL *conControl = NULL;
 
-	conOut = SystemTable->ConOut;
-	conIn = SystemTable->ConIn;
+	//if (TryProtocol(guid_conControl, (void**)&conControl,
+	//	L"CONSOLE_CONTROL_PROTOCOL", ImageHandle, SystemTable) != TRUE) {
+	//	SetBootArgs();
+	//	return EFI_SUCCESS;
+	//}
 
-	EFI_GUID guid_conControl = EFI_CONSOLE_CONTROL_PROTOCOL_GUID;
-	EFI_CONSOLE_CONTROL_PROTOCOL *conControl = NULL;
-
-	if (TryProtocol(guid_conControl, (void**)&conControl,
-		L"CONSOLE_CONTROL_PROTOCOL", ImageHandle, SystemTable) != TRUE) {
-		SetBootArgs();
-		return EFI_SUCCESS;
-	}
-
-	conControl->SetMode(conControl, EfiConsoleControlScreenText);
+	//conControl->SetMode(conControl, EfiConsoleControlScreenText);
 
 	for (;;)
 	{
 		// inter alia, we want to clear the other stuff on the hidden text screen, before switching to viewing the text...
-		conOut->ClearScreen(conOut);
+		gST->ConOut->ClearScreen(gST->ConOut);
 
 		SetColour(EFI_YELLOW);
 		Print(L"macOS Boot Helper\n");
@@ -360,14 +355,10 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
-		// globals
-		rt = SystemTable->RuntimeServices;
-		bt = SystemTable->BootServices;
+		//gRT->SetVariable(L"csr-active-config", &appleGUID, flags, 4, csrVal);
+		//gRT->SetVariable(L"EnableTRIM", &appleGUID, flags, 1, trimSetting);
 
-		//rt->SetVariable(L"csr-active-config", &appleGUID, flags, 4, csrVal);
-		//rt->SetVariable(L"EnableTRIM", &appleGUID, flags, 1, trimSetting);
-
-		//rt->ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, NULL);
+		//gRT->ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, NULL);
 
 		//efi_guid_t guid = EFI_GLOBAL_VARIABLE_GUID;
 
@@ -420,8 +411,8 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
 			}
 			else if (c == L'x')
 			{
-				Print(L"Changing mode...");
-				conControl->SetMode(conControl, EfiConsoleControlScreenGraphics);
+				//Print(L"Changing mode...");
+				//conControl->SetMode(conControl, EfiConsoleControlScreenGraphics);
 				Print(L"Exiting...");
 				return 0;
 			}
