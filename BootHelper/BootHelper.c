@@ -96,24 +96,85 @@ EFI_STATUS getkeystroke(EFI_INPUT_KEY *Key)
 	return gST->ConIn->ReadKeyStroke(gST->ConIn, Key);
 }
 
-CHAR16 HexChar(UINT16 c)
-{
-	if (c < 10) return c + (CHAR16)'0';
-	else return c - 10 + (CHAR16)'a';
-}
-
-void DisplayVar(const CHAR8* in, UINTN size, BOOLEAN isString)
+int mymcmp(CONST IN CHAR8 *buf1, CONST IN CHAR8 *buf2, UINTN size)
 {
 	for (UINTN i = 0; i < size; i++)
 	{
+		if (buf1[i] - buf2[i] != 0) return buf1[i] - buf2[i];
+	}
+	return 0;
+}
+
+CHAR16 HexChar(CHAR16 c)
+{
+	if (c < 10) return c + L'0';
+	else return c - 10 + L'a';
+}
+
+#define EFI_QEMU_C16_GUID_1 \
+  { 0x158DEF5A, 0xF656, 0x419C, {0xB0, 0x27, 0x7A, 0x31, 0x92, 0xC0, 0x79, 0xD2} }
+#define EFI_QEMU_C16_GUID_2 \
+  { 0x0053D9D6, 0x2659, 0x4599, {0xA2, 0x6B, 0xEF, 0x45, 0x36, 0xE6, 0x31, 0xA9} }
+
+STATIC EFI_GUID gEfiQemuC16lGuid1 = EFI_QEMU_C16_GUID_1;
+STATIC EFI_GUID gEfiQemuC16lGuid2 = EFI_QEMU_C16_GUID_2;
+
+void DisplayVarC8(const CHAR8* in, UINTN charSize, BOOLEAN isString)
+{
+	Print(L"\"");
+	for (UINTN i = 0; i < charSize; i++)
+	{
 		CHAR8 c = in[i];
-		if (isString && c >= 32 && c < 127) Print(L"%c", (CHAR16)c);
+		if (isString && c >= 32 && c < 127)
+		{
+			Print(L"%c", (CHAR16)c);
+			if (c == '%') Print(L"%%"); // escape % so that representation is unambiguous & reversible
+		}
 		else
 		{
 			Print(L"%%");
-			Print(L"%c", HexChar(in[i] >> (UINT16)4));
-			Print(L"%c", HexChar(in[i] & (UINT16)0xF));
+			Print(L"%c", HexChar((in[i] >> 4) & 0xF));
+			Print(L"%c", HexChar(in[i] & 0xF));
 		}
+	}
+	Print(L"\"");
+}
+
+void DisplayVarC16(const CHAR16* in, UINTN charSize, BOOLEAN isString)
+{
+	Print(L"L\"");
+	for (UINTN i = 0; i < charSize; i++)
+	{
+		CHAR16 c = in[i];
+		if (isString && c >= 32)
+		{
+			Print(L"%c", c);
+			if (c == L'%') Print(L"%%"); // escape % so that representation is unambiguous & reversible
+		}
+		else
+		{
+			Print(L"%%");
+			Print(L"%c", HexChar((in[i] >> 12) & 0xF));
+			Print(L"%c", HexChar((in[i] >> 8) & 0xF));
+			Print(L"%c", HexChar((in[i] >> 4) & 0xF));
+			Print(L"%c", HexChar(in[i] & 0xF));
+		}
+	}
+	Print(L"\"");
+}
+
+void DisplayVar(const EFI_GUID *Guid, const CHAR8* in, UINTN size, BOOLEAN isString)
+{
+	// some known guid's which seem to have only CHAR16 strings in them
+	if ((size & 1) == 0 &&
+		(mymcmp((CHAR8 *)Guid, (CHAR8 *)&gEfiQemuC16lGuid1, sizeof(Guid)) == 0 ||
+		 mymcmp((CHAR8 *)Guid, (CHAR8 *)&gEfiQemuC16lGuid2, sizeof(Guid)) == 0))
+	{
+		DisplayVarC16((CHAR16 *)in, size >> 1, isString);
+	}
+	else
+	{
+		DisplayVarC8(in, size, isString);
 	}
 }
 
@@ -212,9 +273,8 @@ EFI_STATUS ListVars()
 		// Print variable data
 		//
 #if 1
-		Print(L" = \"");
-		DisplayVar(Data, DataSize, TRUE);
-		Print(L"\"");
+		Print(L" = ");
+		DisplayVar(&Guid, Data, DataSize, TRUE);
 #else
 		UINTN Index;
 		for (Index = 0; Index < DataSize; Index++) {
@@ -280,12 +340,16 @@ void string8to16(const CHAR8* in, CHAR16* out, UINTN size, BOOLEAN isString)
 	{
 		CHAR8 c = in[i];
 		if (isString && c == 0) break;
-		if (isString && c >= 32 && c < 127) out[o++] = in[i];
+		if (isString && c >= 32 && c < 127)
+		{
+			out[o++] = c;
+			if (c == '%') out[o++] = c; // escape % itself
+		}
 		else
 		{
 			out[o++] = '%';
-			out[o++] = hexDigit(in[i] >> 4);
-			out[o++] = hexDigit(in[i] & 0xF);
+			out[o++] = hexDigit((c >> 4) & 0xF);
+			out[o++] = hexDigit(c & 0xF);
 		}
 	}
 	out[o] = 0;
@@ -314,7 +378,7 @@ void Reboot()
 
 static EFI_GUID appleGUID = { 0x7c436110, 0xab2a, 0x4bbb, {0xa8, 0x80, 0xfe, 0x41, 0x99, 0x5c, 0x9f, 0x82} };
 
-void DisplayNvramValue(CHAR16 *varName, BOOLEAN isString, BOOLEAN showHex)
+void DisplayNvramValue(CHAR16 *varName, BOOLEAN isString)
 {
 	// + 1 for \0 terminators
 	CHAR8 buffer8[BUF_SIZE + 1];
@@ -328,27 +392,35 @@ void DisplayNvramValue(CHAR16 *varName, BOOLEAN isString, BOOLEAN showHex)
 	status = gRT->GetVariable(varName, &appleGUID, &attr, &data_size, &buffer8);
 	if (status == EFI_SUCCESS)
 	{
-		string8to16(buffer8, buffer16, data_size, isString);
-		Print(L"%s=\"%s\" (%spersistent)\n", varName, buffer16, (attr & EFI_VARIABLE_NON_VOLATILE) == 0 ? L"non-" : L"");
-		//Print(L"    size: %d\n", data_size);
-		//Print(L"    attr: %d\n", attr);
-		if (!isString && showHex)
+		Print(L"%s=", varName);
+
+		if (!isString && data_size == 4)
 		{
-			switch (data_size)
-			{
-				case 4:
-					Print(L"     hex: 0x%08x\n", ((UINT32*)buffer8)[0]);
-					break;
-
-				case 2:
-					Print(L"     hex: 0x%04x\n", ((UINT16*)buffer8)[0]);
-					break;
-
-				case 1:
-					Print(L"     hex: 0x%02x\n", buffer8[0]);
-					break;
-			}
+			Print(L"0x%08x", ((UINT32*)buffer8)[0]);
 		}
+		else if (!isString && data_size == 2)
+		{
+			Print(L"0x%04x", ((UINT16*)buffer8)[0]);
+		}
+		else if (!isString && data_size == 1)
+		{
+			Print(L"0x%02x", buffer8[0]);
+		}
+		else
+		{
+#if 0
+			// use ' for non-null-terminated strings (including, but not only, single chars)
+			CHAR16 quote = (CHAR16)(buffer8[data_size - 1] == '\0' ? '"' : '`');
+#else
+			// quote them both the same, to avoid unecessary confusion
+			CHAR16 quote = (CHAR16)'"';
+#endif
+			string8to16(buffer8, buffer16, data_size, isString);
+			Print(L"%c%s%c", quote, buffer16, quote);
+		}
+
+		Print(L" (%spersistent)", (attr & EFI_VARIABLE_NON_VOLATILE) == 0 ? L"non-" : L"");
+		Print(L"\n");
 	}
 	else if (status == EFI_BUFFER_TOO_SMALL)
 	{
@@ -375,15 +447,6 @@ STATIC CHAR8 gStartupMuteVal[] = { '1' };
 STATIC CHAR8 gGetVarBuffer[] = "-no_compat_check";
 
 STATIC UINT32 gFlags = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE;
-
-int mymcmp(CHAR8 *buf1, CHAR8 *buf2, UINTN size)
-{
-	for (UINTN i = 0; i < size; i++)
-	{
-		if (buf1[i] - buf2[i] != 0) return buf1[i] - buf2[i];
-	}
-	return 0;
-}
 
 void ToggleVar(IN CHAR16 *varName, IN CHAR8 *preferredValue, UINTN actualSize)
 {
@@ -451,11 +514,11 @@ UefiMain(
 	for (;;)
 	{
 		// inter alia, we want to clear the other stuff on the hidden text screen, before switching to viewing the text...
-		//gST->ConOut->ClearScreen(gST->ConOut);
+		gST->ConOut->ClearScreen(gST->ConOut);
 
 		SetColour(EFI_LIGHTMAGENTA);
 		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.0.16\n");
+		Print(L"0.0.18\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
@@ -466,9 +529,9 @@ UefiMain(
 
 		//efi_guid_t guid = EFI_GLOBAL_VARIABLE_GUID;
 
-		DisplayNvramValue(L"boot-args", TRUE, FALSE);
-		DisplayNvramValue(L"csr-active-config", FALSE, FALSE);
-		DisplayNvramValue(L"StartupMute", TRUE, FALSE);
+		DisplayNvramValue(L"boot-args", TRUE);
+		DisplayNvramValue(L"csr-active-config", FALSE);
+		DisplayNvramValue(L"StartupMute", TRUE);
 
 		SetColour(EFI_LIGHTRED);
 		Print(L"\nboot-[A]rgs; [B]ig Sur; [C]atalina; Startup[M]ute\n[R]eboot; [S]hutdown; E[x]it; [L]ist\n");
@@ -531,7 +594,5 @@ UefiMain(
 				return EFI_SUCCESS;
 			}
 		}
-
-		gST->ConOut->ClearScreen(gST->ConOut);
 	}
 }
