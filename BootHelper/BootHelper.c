@@ -305,7 +305,7 @@ void Reboot()
 
 static EFI_GUID appleGUID = { 0x7c436110, 0xab2a, 0x4bbb, {0xa8, 0x80, 0xfe, 0x41, 0x99, 0x5c, 0x9f, 0x82} };
 
-void DisplayNvramValue(CHAR16 *varName, BOOLEAN isString)
+void DisplayNvramValue(CHAR16 *varName, BOOLEAN isString, BOOLEAN showHex)
 {
 	// + 1 for \0 terminators
 	CHAR8 buffer8[BUF_SIZE + 1];
@@ -320,10 +320,10 @@ void DisplayNvramValue(CHAR16 *varName, BOOLEAN isString)
 	if (status == EFI_SUCCESS)
 	{
 		string8to16(buffer8, buffer16, data_size, isString);
-		Print(L"%s=\"%s\" (0x%08x)\n", varName, buffer16, attr);
+		Print(L"%s=\"%s\" (%spersistent)\n", varName, buffer16, (attr & EFI_VARIABLE_NON_VOLATILE) == 0 ? "non-" : "");
 		//Print(L"    size: %d\n", data_size);
 		//Print(L"    attr: %d\n", attr);
-		if (!isString)
+		if (!isString && showHex)
 		{
 			switch (data_size)
 			{
@@ -360,12 +360,21 @@ void DisplayNvramValue(CHAR16 *varName, BOOLEAN isString)
 STATIC CHAR8 gBootArgsVal[] = "-no_compat_check";
 
 // one char, no zero terminator
-STATIC CHAR8 gStartupMuteVal[] = "1"; // { '1' };
+STATIC CHAR8 gStartupMuteVal[] = { '1' };
 
 // equal to max size of toggled var
 STATIC CHAR8 gGetVarBuffer[] = "-no_compat_check";
 
 STATIC UINT32 gFlags = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE;
+
+int mymcmp(CHAR8 *buf1, CHAR8 *buf2, UINTN size)
+{
+	for (UINTN i = 0; i < size; i++)
+	{
+		if (buf1[i] - buf2[i] != 0) return buf1[i] - buf2[i];
+	}
+	return 0;
+}
 
 void ToggleVar(IN CHAR16 *varName, IN CHAR8 *preferredValue, UINTN actualSize)
 {
@@ -374,7 +383,7 @@ void ToggleVar(IN CHAR16 *varName, IN CHAR8 *preferredValue, UINTN actualSize)
 	UINTN data_size = actualSize;
 	if (!EFI_ERROR(gRT->GetVariable(varName, &appleGUID, &attr, &data_size, gGetVarBuffer)) &&
 		data_size == actualSize &&
-		strcmp(preferredValue, gGetVarBuffer) == 0)
+		mymcmp(preferredValue, gGetVarBuffer, actualSize) == 0)
 	{
 		gRT->SetVariable(varName, &appleGUID, gFlags, 0, NULL);
 	}
@@ -389,10 +398,14 @@ void ToggleBootArgs()
 	ToggleVar(L"boot-args", gBootArgsVal, sizeof(gBootArgsVal));
 }
 
+void ToggleCsrActiveConfig(UINT32 value)
+{
+	ToggleVar(L"csr-active-config", (CHAR8 *)&value, sizeof(value));
+}
+
 void ToggleStartupMute()
 {
-	gGetVarBuffer[1] = '\0';
-	ToggleVar(L"StartupMute", gStartupMuteVal, 1);
+	ToggleVar(L"StartupMute", gStartupMuteVal, sizeof(gStartupMuteVal));
 }
 
 #if 0
@@ -431,9 +444,9 @@ UefiMain(
 		// inter alia, we want to clear the other stuff on the hidden text screen, before switching to viewing the text...
 		gST->ConOut->ClearScreen(gST->ConOut);
 
-		SetColour(EFI_LIGHTMAGENTA);
+		SetColour(EFI_YELLOW);
 		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.0.13\n");
+		Print(L"0.0.14\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
@@ -444,13 +457,12 @@ UefiMain(
 
 		//efi_guid_t guid = EFI_GLOBAL_VARIABLE_GUID;
 
-		DisplayNvramValue(L"boot-args", TRUE);
-		DisplayNvramValue(L"csr-active-config", FALSE);
-		DisplayNvramValue(L"StartupMute", TRUE);
-		DisplayNvramValue(L"StartupMute", FALSE);
+		DisplayNvramValue(L"boot-args", TRUE, FALSE);
+		DisplayNvramValue(L"csr-active-config", FALSE, FALSE);
+		DisplayNvramValue(L"StartupMute", TRUE, FALSE);
 
 		SetColour(EFI_LIGHTRED);
-		Print(L"\n[B]oot-args; [C]sr-active-config; Startup[M]ute\n[R]eboot; [S]hutdown; E[x]it; [L]ist\n");
+		Print(L"\nboot-[A]rgs; [B]ig Sur; [C]atalina; Startup[M]ute\n[R]eboot; [S]hutdown; E[x]it; [L]ist\n");
 		SetColour(EFI_WHITE);
 
 		EFI_INPUT_KEY key;
@@ -464,15 +476,19 @@ UefiMain(
 			CHAR16 c = key.UnicodeChar;
 			if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a';
 
-			if (c == L'b')
+			if (c == L'a')
 			{
 				ToggleBootArgs();
 				break;
 			}
 			else if (c == L'c')
 			{
-				//ToggleBootArgs();
-				//Reboot();
+				ToggleCsrActiveConfig(0x77);
+				break;
+			}
+			else if (c == L'b')
+			{
+				ToggleCsrActiveConfig(0x7f);
 				break;
 			}
 			else if (c == L'm')
@@ -482,11 +498,13 @@ UefiMain(
 			}
 			else if (c == L'r')
 			{
+				Print(L"Rebooting...");
 				Reboot();
 				break;
 			}
 			else if (c == L's')
 			{
+				Print(L"Shutting down...");
 				Shutdown();
 				break;
 			}
