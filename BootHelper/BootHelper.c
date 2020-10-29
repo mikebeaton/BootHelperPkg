@@ -230,6 +230,15 @@ EFI_STATUS ListVars()
 
 		EFI_INPUT_KEY key;
 		getkeystroke(&key);
+
+		CHAR16 c = key.UnicodeChar;
+		if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a';
+		if (c == 'q')
+		{
+			FreePool(Name);
+			return EFI_SUCCESS;
+		}
+
 	}
 }
 
@@ -320,7 +329,7 @@ void DisplayNvramValue(CHAR16 *varName, BOOLEAN isString, BOOLEAN showHex)
 	if (status == EFI_SUCCESS)
 	{
 		string8to16(buffer8, buffer16, data_size, isString);
-		Print(L"%s=\"%s\" (%spersistent)\n", varName, buffer16, (attr & EFI_VARIABLE_NON_VOLATILE) == 0 ? "non-" : "");
+		Print(L"%s=\"%s\" (%spersistent)\n", varName, buffer16, (attr & EFI_VARIABLE_NON_VOLATILE) == 0 ? L"non-" : L"");
 		//Print(L"    size: %d\n", data_size);
 		//Print(L"    attr: %d\n", attr);
 		if (!isString && showHex)
@@ -442,11 +451,11 @@ UefiMain(
 	for (;;)
 	{
 		// inter alia, we want to clear the other stuff on the hidden text screen, before switching to viewing the text...
-		gST->ConOut->ClearScreen(gST->ConOut);
+		//gST->ConOut->ClearScreen(gST->ConOut);
 
-		SetColour(EFI_YELLOW);
+		SetColour(EFI_LIGHTMAGENTA);
 		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.0.14\n");
+		Print(L"0.0.16\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
@@ -498,13 +507,13 @@ UefiMain(
 			}
 			else if (c == L'r')
 			{
-				Print(L"Rebooting...");
+				Print(L"\nRebooting...");
 				Reboot();
 				break;
 			}
 			else if (c == L's')
 			{
-				Print(L"Shutting down...");
+				Print(L"\nShutting down...");
 				Shutdown();
 				break;
 			}
@@ -518,11 +527,11 @@ UefiMain(
 			}
 			else if (c == L'x')
 			{
-				//Print(L"Changing mode...");
-				//conControl->SetMode(conControl, EfiConsoleControlScreenGraphics);
-				Print(L"Exiting...");
-				return 0;
+				Print(L"\nExiting...\n");
+				return EFI_SUCCESS;
 			}
 		}
+
+		gST->ConOut->ClearScreen(gST->ConOut);
 	}
 }
