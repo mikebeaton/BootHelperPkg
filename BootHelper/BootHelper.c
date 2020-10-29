@@ -184,8 +184,8 @@ void DisplayVar(const EFI_GUID *Guid, const CHAR8* in, UINTN size, BOOLEAN isStr
 {
 	// some known guid's which seem to have only CHAR16 strings in them
 	if ((size & 1) == 0 &&
-		(mymcmp((CHAR8 *)Guid, (CHAR8 *)&gEfiQemuC16lGuid1, sizeof(Guid)) == 0 ||
-		 mymcmp((CHAR8 *)Guid, (CHAR8 *)&gEfiQemuC16lGuid2, sizeof(Guid)) == 0))
+		(mymcmp((CHAR8 *)Guid, (CHAR8 *)&gEfiQemuC16lGuid1, sizeof(EFI_GUID)) == 0 ||
+		 mymcmp((CHAR8 *)Guid, (CHAR8 *)&gEfiQemuC16lGuid2, sizeof(EFI_GUID)) == 0))
 	{
 		DisplayVarC16((CHAR16 *)in, size >> 1, isString);
 	}
@@ -404,7 +404,7 @@ void Reboot()
 
 static EFI_GUID appleGUID = { 0x7c436110, 0xab2a, 0x4bbb, {0xa8, 0x80, 0xfe, 0x41, 0x99, 0x5c, 0x9f, 0x82} };
 
-void DisplayNvramValue(CHAR16 *varName, EFI_GUID *guid, BOOLEAN isString)
+void DisplayNvramValue(EFI_GUID *guid, CHAR16 *varName, BOOLEAN isString)
 {
 	// + 1 for \0 terminators
 	CHAR8 buffer8[BUF_SIZE + 1];
@@ -415,7 +415,7 @@ void DisplayNvramValue(CHAR16 *varName, EFI_GUID *guid, BOOLEAN isString)
 
 	EFI_STATUS status;
 
-	status = gRT->GetVariable(varName, &appleGUID, &attr, &data_size, &buffer8);
+	status = gRT->GetVariable(varName, guid, &attr, &data_size, &buffer8);
 	if (status == EFI_SUCCESS)
 	{
 		Print(L"%s=", varName);
@@ -465,7 +465,7 @@ void DisplayNvramValue(CHAR16 *varName, EFI_GUID *guid, BOOLEAN isString)
 
 void DisplayAppleNvramValue(CHAR16 *varName, BOOLEAN isString)
 {
-	DisplayNvramValue(varName, &appleGUID, isString);
+	DisplayNvramValue(&appleGUID, varName, isString);
 }
 
 // with zero terminator
@@ -549,7 +549,7 @@ UefiMain(
 
 		SetColour(EFI_LIGHTMAGENTA);
 		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.0.22\n");
+		Print(L"0.0.23\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
@@ -601,7 +601,9 @@ UefiMain(
 			}
 			else if (c == L'o')
 			{
-				DisplayNvramValue(L"opencore-version", &gEfiOpenCoreGuid, TRUE);
+				SetColour(EFI_LIGHTCYAN);
+				DisplayNvramValue(&gEfiOpenCoreGuid, L"opencore-version", TRUE);
+				SetColour(EFI_WHITE);
 			}
 			else if (c == L'r')
 			{
