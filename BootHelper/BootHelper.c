@@ -551,7 +551,7 @@ UefiMain(
 
 		SetColour(EFI_LIGHTMAGENTA);
 		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.0.24\n");
+		Print(L"0.1.0\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
@@ -605,11 +605,11 @@ UefiMain(
 				ToggleStartupMute();
 				break;
 			}
-			else if (c == L'o')
-			{
-				showOCVersion = !showOCVersion;
-				break;
-			}
+			//else if (c == L'o')
+			//{
+			//	showOCVersion = !showOCVersion;
+			//	break;
+			//}
 			else if (c == L'r')
 			{
 				Print(L"\nRebooting...");
