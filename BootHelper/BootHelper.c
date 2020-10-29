@@ -206,6 +206,8 @@ EFI_STATUS ListVars()
 	UINTN DataSize;
 	UINT8 *Data;
 
+	BOOLEAN showAll = FALSE;
+
 	//Print(L"-a");
 	//
 	// Initialize the variable name and data buffer variables
@@ -305,15 +307,22 @@ EFI_STATUS ListVars()
 		//Print(L"-j");
 		FreePool(Data);
 
-		EFI_INPUT_KEY key;
-		getkeystroke(&key);
-
-		CHAR16 c = key.UnicodeChar;
-		if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a';
-		if (c == 'q')
+		if (!showAll)
 		{
-			FreePool(Name);
-			return EFI_SUCCESS;
+			EFI_INPUT_KEY key;
+			getkeystroke(&key);
+
+			CHAR16 c = key.UnicodeChar;
+			if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a';
+			if (c == 'q')
+			{
+				FreePool(Name);
+				return EFI_SUCCESS;
+			}
+			else if (c == 'a')
+			{
+				showAll = TRUE;
+			}
 		}
 
 	}
@@ -540,7 +549,7 @@ UefiMain(
 
 		SetColour(EFI_LIGHTMAGENTA);
 		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.0.21\n");
+		Print(L"0.0.22\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
@@ -608,9 +617,12 @@ UefiMain(
 			}
 			else if (c == L'l')
 			{
-				Print(L"Listing...\n");
-				ListVars();
-				Print(L"Listed.\nAny Key...\n");
+				Print(L"Listing... (any key; [Q]uit; [A]ll)\n");
+				if (EFI_ERROR(ListVars()))
+					Print(L"Listed.\n");
+				else
+					Print(L"Quit.\n");
+				Print(L"Any Key...\n");
 				getkeystroke(&key);
 				break;
 			}
