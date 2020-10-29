@@ -5,7 +5,7 @@
     <EDK_PATH>$(SolutionDir)..\edk2</EDK_PATH>
   </PropertyGroup>
   <PropertyGroup>
-    <IncludePath>$(EDK_PATH)\MdePkg\Include;$(EDK_PATH)\MdePkg\Include\X64;$(EDK_PATH)\ShellPkg\Include;$(EDK_PATH)\CryptoPkg\Include</IncludePath>
+    <IncludePath>$(EDK_PATH)\MdePkg\Include;$(EDK_PATH)\MdePkg\Include\X64;$(EDK_PATH)\ShellPkg\Include;$(EDK_PATH)\CryptoPkg\Include;$(EDK_PATH)\EdkCompatibilityPkg\Foundation</IncludePath>
     <LibraryPath>$(SolutionDir)..\EDK-II\$(Platform)\$(Configuration)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">

@@ -6,6 +6,7 @@
 #include <Library/DebugLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/BaseMemoryLib.h>
+#include <Protocol/ConsoleControl/ConsoleControl.h>
 
 //
 // Boot and Runtime Services
@@ -38,6 +39,60 @@ UefiUnload (
     // This code should be compiled out and never called 
     // 
     ASSERT(FALSE);
+}
+
+EFI_STATUS
+EFIAPI
+OcConsoleControlEntryMode(
+	IN EFI_HANDLE        ImageHandle,
+	IN EFI_SYSTEM_TABLE  *SystemTable
+)
+{
+	EFI_STATUS                   Status;
+	EFI_CONSOLE_CONTROL_PROTOCOL *ConsoleControl;
+
+	EFI_GUID efiConsoleControlProtocolGuid = EFI_CONSOLE_CONTROL_PROTOCOL_GUID;
+
+	//
+	// On several types of firmware, we need to use legacy console control protocol to
+	// switch to text mode, otherwise a black screen will be shown.
+	//
+	Status = gBS->HandleProtocol(
+		gST->ConsoleOutHandle,
+		&efiConsoleControlProtocolGuid,
+		(VOID **)&ConsoleControl
+	);
+	if (EFI_ERROR(Status)) {
+		Status = gBS->LocateProtocol(
+			&efiConsoleControlProtocolGuid,
+			NULL,
+			(VOID **)&ConsoleControl
+		);
+	}
+
+	if (!EFI_ERROR(Status)) {
+		ConsoleControl->SetMode(
+			ConsoleControl,
+			0
+		);
+	}
+
+	return EFI_SUCCESS;
+}
+
+// ReadKeyStroke returns EFI_NOT_READY if no key available
+// ReadKeyStroke returns EFI_SUCCESS if a key is available
+// It will not wait for a key to be available.
+EFI_STATUS kbhit(EFI_INPUT_KEY *Key)
+{
+	return gST->ConIn->ReadKeyStroke(gST->ConIn, Key);
+}
+
+// Wait for a key to be available, then read the key using ReadKeyStrokes
+EFI_STATUS getkeystroke(EFI_INPUT_KEY *Key)
+{
+	gBS->WaitForEvent(1, &gST->ConIn->WaitForKey, 0);
+	return gST->ConIn->ReadKeyStroke(gST->ConIn, Key);
 }
 
 CHAR16 HexChar(UINT16 c)
@@ -172,6 +227,8 @@ EFI_STATUS ListVars()
 		//Print(L"-j");
 		FreePool(Data);
 
+		EFI_INPUT_KEY key;
+		getkeystroke(&key);
 	}
 }
 
@@ -192,21 +249,6 @@ void MyPrint(CONST CHAR16 *format, ...)
 EFI_STATUS SetColour(UINTN Attribute)
 {
 	return gST->ConOut->SetAttribute(gST->ConOut, Attribute);
-}
-
-// ReadKeyStroke returns EFI_NOT_READY if no key available
-// ReadKeyStroke returns EFI_SUCCESS if a key is available
-// It will not wait for a key to be available.
-EFI_STATUS kbhit(EFI_SYSTEM_TABLE *SystemTable, EFI_INPUT_KEY *Key)
-{
-	return gST->ConIn->ReadKeyStroke(gST->ConIn, Key);
-}
-
-// Wait for a key to be available, then read the key using ReadKeyStrokes
-EFI_STATUS getkeystroke(EFI_SYSTEM_TABLE *SystemTable, EFI_INPUT_KEY *Key)
-{
-	gST->BootServices->WaitForEvent(1, &gST->ConIn->WaitForKey, 0);
-	return gST->ConIn->ReadKeyStroke(gST->ConIn, Key);
 }
 
 #define BUF_SIZE 255
@@ -333,25 +375,16 @@ UefiMain(
 	IN EFI_SYSTEM_TABLE* SystemTable
 )
 {
-	//EFI_GUID guid_conControl = EFI_CONSOLE_CONTROL_PROTOCOL_GUID;
-	//EFI_CONSOLE_CONTROL_PROTOCOL *conControl = NULL;
-
-	//if (TryProtocol(guid_conControl, (void**)&conControl,
-	//	L"CONSOLE_CONTROL_PROTOCOL", ImageHandle, SystemTable) != TRUE) {
-	//	SetBootArgs();
-	//	return EFI_SUCCESS;
-	//}
-
-	//conControl->SetMode(conControl, EfiConsoleControlScreenText);
+	OcConsoleControlEntryMode(ImageHandle, SystemTable);
 
 	for (;;)
 	{
 		// inter alia, we want to clear the other stuff on the hidden text screen, before switching to viewing the text...
 		gST->ConOut->ClearScreen(gST->ConOut);
 
-		SetColour(EFI_YELLOW);
-		Print(L"macOS Boot Helper\n");
-		Print(L"0.0.9\n");
+		SetColour(EFI_LIGHTMAGENTA);
+		Print(L"macOS NVRAM Boot Helper\n");
+		Print(L"0.0.12\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
@@ -364,6 +397,7 @@ UefiMain(
 
 		DisplayNvramValue(L"boot-args", TRUE);
 		DisplayNvramValue(L"csr-active-config", FALSE);
+		DisplayNvramValue(L"StartupMute", FALSE);
 
 		SetColour(EFI_LIGHTRED);
 		Print(L"\n[B]oot-args; [C]sr-active-config; [R]eboot; [S]hutdown; E[x]it; [L]ist\n");
@@ -374,7 +408,7 @@ UefiMain(
 		for (;;)
 		{
 			//Print(L"Wait for key...\n");
-			getkeystroke(SystemTable, &key);
+			getkeystroke(&key);
 			//Print(L"Got key %c (%x)\n", key.UnicodeChar, key.UnicodeChar);
 
 			CHAR16 c = key.UnicodeChar;
@@ -406,7 +440,7 @@ UefiMain(
 				Print(L"Listing...\n");
 				ListVars();
 				Print(L"Listed.\nAny Key...\n");
-				getkeystroke(SystemTable, &key);
+				getkeystroke(&key);
 				break;
 			}
 			else if (c == L'x')
