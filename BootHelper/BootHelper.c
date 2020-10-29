@@ -540,6 +540,8 @@ UefiMain(
 	IN EFI_SYSTEM_TABLE* SystemTable
 )
 {
+	BOOLEAN showOCVersion = FALSE;
+
 	OcConsoleControlEntryMode(ImageHandle, SystemTable);
 
 	for (;;)
@@ -549,7 +551,7 @@ UefiMain(
 
 		SetColour(EFI_LIGHTMAGENTA);
 		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.0.23\n");
+		Print(L"0.0.24\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
@@ -563,6 +565,10 @@ UefiMain(
 		DisplayAppleNvramValue(L"boot-args", TRUE);
 		DisplayAppleNvramValue(L"csr-active-config", FALSE);
 		DisplayAppleNvramValue(L"StartupMute", TRUE);
+		if (showOCVersion)
+		{
+			DisplayNvramValue(&gEfiOpenCoreGuid, L"opencore-version", TRUE);
+		}
 
 		SetColour(EFI_LIGHTRED);
 		Print(L"\nboot-[A]rgs; [B]ig Sur; [C]atalina; Startup[M]ute\n[R]eboot; [S]hutdown; E[x]it; [L]ist\n");
@@ -601,9 +607,8 @@ UefiMain(
 			}
 			else if (c == L'o')
 			{
-				SetColour(EFI_LIGHTCYAN);
-				DisplayNvramValue(&gEfiOpenCoreGuid, L"opencore-version", TRUE);
-				SetColour(EFI_WHITE);
+				showOCVersion = !showOCVersion;
+				break;
 			}
 			else if (c == L'r')
 			{
