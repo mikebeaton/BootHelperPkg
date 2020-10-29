@@ -111,6 +111,10 @@ CHAR16 HexChar(CHAR16 c)
 	else return c - 10 + L'a';
 }
 
+#define EFI_OPEN_CORE_GUID \
+  { 0x4d1fda02, 0x38c7, 0x4a6a, {0x9c, 0xc6, 0x4b, 0xcc, 0xa8, 0xb3, 0x01, 0x02} }
+STATIC EFI_GUID gEfiOpenCoreGuid = EFI_OPEN_CORE_GUID;
+
 #define EFI_QEMU_C16_GUID_1 \
   { 0x158DEF5A, 0xF656, 0x419C, {0xB0, 0x27, 0x7A, 0x31, 0x92, 0xC0, 0x79, 0xD2} }
 #define EFI_QEMU_C16_GUID_2 \
@@ -391,7 +395,7 @@ void Reboot()
 
 static EFI_GUID appleGUID = { 0x7c436110, 0xab2a, 0x4bbb, {0xa8, 0x80, 0xfe, 0x41, 0x99, 0x5c, 0x9f, 0x82} };
 
-void DisplayNvramValue(CHAR16 *varName, BOOLEAN isString)
+void DisplayNvramValue(CHAR16 *varName, EFI_GUID *guid, BOOLEAN isString)
 {
 	// + 1 for \0 terminators
 	CHAR8 buffer8[BUF_SIZE + 1];
@@ -448,6 +452,11 @@ void DisplayNvramValue(CHAR16 *varName, BOOLEAN isString)
 	{
 		Print(L"%s: EFI_UNKOWN_STATUS=%d\n", varName, status);
 	}
+}
+
+void DisplayAppleNvramValue(CHAR16 *varName, BOOLEAN isString)
+{
+	DisplayNvramValue(varName, &appleGUID, isString);
 }
 
 // with zero terminator
@@ -531,7 +540,7 @@ UefiMain(
 
 		SetColour(EFI_LIGHTMAGENTA);
 		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.0.20\n");
+		Print(L"0.0.21\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
@@ -542,9 +551,9 @@ UefiMain(
 
 		//efi_guid_t guid = EFI_GLOBAL_VARIABLE_GUID;
 
-		DisplayNvramValue(L"boot-args", TRUE);
-		DisplayNvramValue(L"csr-active-config", FALSE);
-		DisplayNvramValue(L"StartupMute", TRUE);
+		DisplayAppleNvramValue(L"boot-args", TRUE);
+		DisplayAppleNvramValue(L"csr-active-config", FALSE);
+		DisplayAppleNvramValue(L"StartupMute", TRUE);
 
 		SetColour(EFI_LIGHTRED);
 		Print(L"\nboot-[A]rgs; [B]ig Sur; [C]atalina; Startup[M]ute\n[R]eboot; [S]hutdown; E[x]it; [L]ist\n");
@@ -580,6 +589,10 @@ UefiMain(
 			{
 				ToggleStartupMute();
 				break;
+			}
+			else if (c == L'o')
+			{
+				DisplayNvramValue(L"opencore-version", &gEfiOpenCoreGuid, TRUE);
 			}
 			else if (c == L'r')
 			{
