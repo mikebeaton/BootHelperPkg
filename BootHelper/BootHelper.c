@@ -119,10 +119,10 @@ CHAR16 HexChar(CHAR16 c)
 STATIC EFI_GUID gEfiQemuC16lGuid1 = EFI_QEMU_C16_GUID_1;
 STATIC EFI_GUID gEfiQemuC16lGuid2 = EFI_QEMU_C16_GUID_2;
 
-void DisplayVarC8(const CHAR8* in, UINTN charSize, BOOLEAN isString)
+void DisplayVarC8(const CHAR8* in, UINTN nChars, BOOLEAN isString)
 {
 	Print(L"\"");
-	for (UINTN i = 0; i < charSize; i++)
+	for (UINTN i = 0; i < nChars; i++)
 	{
 		CHAR8 c = in[i];
 		if (isString && c >= 32 && c < 127)
@@ -138,12 +138,25 @@ void DisplayVarC8(const CHAR8* in, UINTN charSize, BOOLEAN isString)
 		}
 	}
 	Print(L"\"");
+
+	if (nChars == 4)
+	{
+		Print(L" (0x%08x)", ((UINT32*)in)[0]);
+	}
+	else if (nChars == 2)
+	{
+		Print(L" (0x%04x)", ((UINT16*)in)[0]);
+	}
+	else if (nChars == 1)
+	{
+		Print(L" (0x%02x)", in[0]);
+	}
 }
 
-void DisplayVarC16(const CHAR16* in, UINTN charSize, BOOLEAN isString)
+void DisplayVarC16(const CHAR16* in, UINTN nChars, BOOLEAN isString)
 {
 	Print(L"L\"");
-	for (UINTN i = 0; i < charSize; i++)
+	for (UINTN i = 0; i < nChars; i++)
 	{
 		CHAR16 c = in[i];
 		if (isString && c >= 32)
@@ -518,7 +531,7 @@ UefiMain(
 
 		SetColour(EFI_LIGHTMAGENTA);
 		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.0.18\n");
+		Print(L"0.0.19\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
