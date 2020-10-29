@@ -6,6 +6,7 @@
 #include <Library/DebugLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/BaseMemoryLib.h>
+#include <Library/BaseLib.h>
 #include <Protocol/ConsoleControl/ConsoleControl.h>
 
 //
@@ -319,10 +320,26 @@ void DisplayNvramValue(CHAR16 *varName, BOOLEAN isString)
 	if (status == EFI_SUCCESS)
 	{
 		string8to16(buffer8, buffer16, data_size, isString);
-		Print(L"%s=\"%s\"\n", varName, &buffer16);
+		Print(L"%s=\"%s\" (0x%08x)\n", varName, buffer16, attr);
 		//Print(L"    size: %d\n", data_size);
 		//Print(L"    attr: %d\n", attr);
-		if (!isString) Print(L"     hex: 0x%08x\n", ((UINT32*)buffer8)[0]);
+		if (!isString)
+		{
+			switch (data_size)
+			{
+				case 4:
+					Print(L"     hex: 0x%08x\n", ((UINT32*)buffer8)[0]);
+					break;
+
+				case 2:
+					Print(L"     hex: 0x%04x\n", ((UINT16*)buffer8)[0]);
+					break;
+
+				case 1:
+					Print(L"     hex: 0x%02x\n", buffer8[0]);
+					break;
+			}
+		}
 	}
 	else if (status == EFI_BUFFER_TOO_SMALL)
 	{
@@ -339,14 +356,46 @@ void DisplayNvramValue(CHAR16 *varName, BOOLEAN isString)
 	}
 }
 
-void SetBootArgs()
+// with zero terminator
+STATIC CHAR8 gBootArgsVal[] = "-no_compat_check";
+
+// one char, no zero terminator
+STATIC CHAR8 gStartupMuteVal[] = "1"; // { '1' };
+
+// equal to max size of toggled var
+STATIC CHAR8 gGetVarBuffer[] = "-no_compat_check";
+
+STATIC UINT32 gFlags = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE;
+
+void ToggleVar(IN CHAR16 *varName, IN CHAR8 *preferredValue, UINTN actualSize)
 {
-	UINT32 flags = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE;
-	CHAR8 bootArgsVal[] = "-no_compat_check";
-	gRT->SetVariable(L"boot-args", &appleGUID, flags, sizeof(bootArgsVal), bootArgsVal);
+	UINT32 attr;
+
+	UINTN data_size = actualSize;
+	if (!EFI_ERROR(gRT->GetVariable(varName, &appleGUID, &attr, &data_size, gGetVarBuffer)) &&
+		data_size == actualSize &&
+		strcmp(preferredValue, gGetVarBuffer) == 0)
+	{
+		gRT->SetVariable(varName, &appleGUID, gFlags, 0, NULL);
+	}
+	else
+	{
+		gRT->SetVariable(varName, &appleGUID, gFlags, actualSize, preferredValue);
+	}
 }
 
-#if 1
+void ToggleBootArgs()
+{
+	ToggleVar(L"boot-args", gBootArgsVal, sizeof(gBootArgsVal));
+}
+
+void ToggleStartupMute()
+{
+	gGetVarBuffer[1] = '\0';
+	ToggleVar(L"StartupMute", gStartupMuteVal, 1);
+}
+
+#if 0
 BOOLEAN TryProtocol(EFI_GUID proto_guid, void** out, const CHAR16* name,
 	EFI_HANDLE imageHandle, EFI_SYSTEM_TABLE* systemTable) {
 
@@ -384,12 +433,12 @@ UefiMain(
 
 		SetColour(EFI_LIGHTMAGENTA);
 		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.0.12\n");
+		Print(L"0.0.13\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
-		//gRT->SetVariable(L"csr-active-config", &appleGUID, flags, 4, csrVal);
-		//gRT->SetVariable(L"EnableTRIM", &appleGUID, flags, 1, trimSetting);
+		//gRT->SetVariable(L"csr-active-config", &appleGUID, gFlags, 4, csrVal);
+		//gRT->SetVariable(L"EnableTRIM", &appleGUID, gFlags, 1, trimSetting);
 
 		//gRT->ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, NULL);
 
@@ -397,10 +446,11 @@ UefiMain(
 
 		DisplayNvramValue(L"boot-args", TRUE);
 		DisplayNvramValue(L"csr-active-config", FALSE);
+		DisplayNvramValue(L"StartupMute", TRUE);
 		DisplayNvramValue(L"StartupMute", FALSE);
 
 		SetColour(EFI_LIGHTRED);
-		Print(L"\n[B]oot-args; [C]sr-active-config; [R]eboot; [S]hutdown; E[x]it; [L]ist\n");
+		Print(L"\n[B]oot-args; [C]sr-active-config; Startup[M]ute\n[R]eboot; [S]hutdown; E[x]it; [L]ist\n");
 		SetColour(EFI_WHITE);
 
 		EFI_INPUT_KEY key;
@@ -416,13 +466,18 @@ UefiMain(
 
 			if (c == L'b')
 			{
-				SetBootArgs();
+				ToggleBootArgs();
 				break;
 			}
 			else if (c == L'c')
 			{
-				//SetBootArgs();
+				//ToggleBootArgs();
 				//Reboot();
+				break;
+			}
+			else if (c == L'm')
+			{
+				ToggleStartupMute();
 				break;
 			}
 			else if (c == L'r')
