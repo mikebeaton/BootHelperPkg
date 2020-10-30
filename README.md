@@ -36,7 +36,7 @@ If you find the tool really useful, you could consider making a tiny (e.g. 20MB)
 
 ### Advanced
 
-To use as an OpenCore tool, copy `EFI\BOOT\BootHelper.efi` into the `EFI\OC\Tools` of an existing OpenCore boot disk, and then configure this as a tool in the `Tools` section of `EFI\OC\config.plist` (following the pattern of any existing tools in there).
+To use as an OpenCore tool, copy `EFI/BOOT/BootHelper.efi` into the `EFI/OC/Tools` of an existing OpenCore boot disk, and then configure this as a tool in the `Tools` section of `EFI/OC/config.plist` (following the pattern of any existing tools in there).
 
 `BootHelper.efi` can also be run from OpenCore Open Shell or any other UEFI Shell, if you already have one configured.
 
