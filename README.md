@@ -22,7 +22,7 @@ Features:
 
 ### Standard Usage
 
-Download the current [release zip file](./releases/download/0.1.0/BootHelper.zip).
+Download the current [release zip file](../../releases/download/0.1.0/BootHelper.zip).
 
 Copy the entire EFI folder from the zip file into the root of any FAT32 USB drive. No other files on the drive need to be deleted. If you boot up your Mac while holding down Alt/Option then you should see your USB drive listed as 'Boot Helper', and you can boot from it to start the utilty.
 
@@ -48,7 +48,7 @@ These are just the settings I wanted to be able to change quickly. I am hoping t
 
 The code is currently set up to compile using [VisualUefi](https://github.com/ionescu007/VisualUefi) - largely because getting started with EDK2 development is hard, and this seemed like a do-able way to get going. To use the code as is, you need to develop on Windows. On Windows only, please check in and out with `git config core.autocrlf` = `true` - the line endings in the repo are LF.
 
-The code up to [this tag](./tree/last-edk1) was built in EDK 1 and compiles fine on Linux and macOS (with [these prerequisites](https://forums.macrumors.com/threads/macos-11-big-sur-on-unsupported-macs-thread.2242172/page-202?post=29009038#post-29009038)).
+The code up to [this tag](../../tree/last-edk1) was built in EDK 1 and compiles fine on Linux and macOS (with [these prerequisites](https://forums.macrumors.com/threads/macos-11-big-sur-on-unsupported-macs-thread.2242172/page-202?post=29009038#post-29009038)).
 
 As long as I can get Xcode QEMU support working (I'm currently very much enjoying the VisualUefi QEMU support) I'm planning to move the project back to a more standard EDK 2 set up, at which point I'll probably rename the repo to `BootHelperPkg` (the current url should get redirected by GitHub).
 
