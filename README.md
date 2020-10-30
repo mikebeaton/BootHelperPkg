@@ -4,21 +4,23 @@
 
 ## Purpose
 
-This can be used as a stand-alone bootable image, or as a tool from UEFI Shell or Open Core bootloader.
+Can be used as a stand-alone bootable image (e.g. on a USB stick), or as a tool from UEFI Shell or Open Core bootloader.
 
-The idea is to let you quickly set some useful nvram values which would normally require you to boot all the way into macOS recovery.
+The idea is to let you quickly set some useful nvram values which would normally require booting all the way into macOS recovery.
 
-You can very quickly do the equivalent of `csrutil enable/disable` (Big Sur or Catalina settings).
+Features:
 
-You can quickly set `nvram boot-args="-no_compat_check"` (may be the only setting you need, after [installation](...), to run Big Sur on an only slightly incompatible mac).
+ - You can very quickly do the equivalent of `csrutil enable/disable` (Big Sur or Catalina settings).
 
-You can quickly set/clear `StartupMute` (which doesn't require Recovery mode to set normally; I just found it useful to add it here).
+ - You can quickly set `nvram boot-args="-no_compat_check"` (may be the only setting you need, after [installation](...), to run Big Sur on an only slightly incompatible mac).
 
-There is also a basic - but hopefully useful - ability to list and view the value of every variable stored in your Mac's nvram.
+ - You can quickly set/clear `StartupMute` (which doesn't require Recovery mode to set normally; I just found it useful to add it here).
+
+ - There is also a basic - but hopefully useful - ability to list and view the value of every variable stored in your Mac's nvram.
 
 ## Usage
 
-### Standard
+### Standard Usage
 
 Download the current [release zip file](...).
 
@@ -44,12 +46,12 @@ These are just the settings I wanted to be able to change quickly. I am hoping t
 
 ## Development/Contribution
 
-The code is currently written using `VisualUefi` - largely because getting started with EDK2 development is hard, and this seemed like a do-able way to start! To use the code as is, you need to develop on Windows. Please check out with `git config core.autocrlf` = `true`.
+The code is currently written using `VisualUefi` - largely because getting started with EDK2 development is hard, and this seemed like a do-able way to start. To use the code as is, you need to develop on Windows. Please check out with `git config core.autocrlf` = `true`.
 
 At some point I'm hoping to move the project to a more standard EDK 2 set up, at which point I'll probably rename the repo to `BootHelperPkg` (the current url should get redirected by GitHub).
 
 ## Credits
 
-A very early version was inspired by Barry K. Nathan's setvars program from the big-sur-micropatcher.
+An early version was inspired by, and based on, Barry K. Nathan's setvars program from the big-sur-micropatcher.
 
-The code to enter console mode is taken from OpenCore and is used (and also made available here) under the BSD license.
+The code to enter console mode is taken from OpenCore and is used, and made available here, under the BSD license.
