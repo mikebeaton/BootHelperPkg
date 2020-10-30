@@ -12,7 +12,7 @@ Features:
 
  - You can very quickly do the equivalent of `csrutil enable/disable` (Big Sur or Catalina settings)
 
- - You can quickly set `nvram boot-args="-no_compat_check"`; which may be the only setting you need, after [installation](https://forums.macrumors.com/threads/macos-11-big-sur-on-unsupported-macs-thread.2242172/page-181?post=28960530#post-28960530), to run Big Sur on an only slightly incompatible Mac
+ - You can quickly set `nvram boot-args="-no_compat_check"`; which may be the only setting you need after installation, to [run Big Sur on an only slightly incompatible Mac](https://forums.macrumors.com/threads/macos-11-big-sur-on-unsupported-macs-thread.2242172/page-181?post=28960530#post-28960530)
 
  - You can quickly set/clear `StartupMute` - this doesn't require Recovery mode to set normally; I just found it useful to add it here
 
