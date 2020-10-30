@@ -4,19 +4,19 @@
 
 ## Purpose
 
-Can be used as a stand-alone bootable image (e.g. on a USB stick), or as a tool from UEFI Shell or Open Core bootloader.
+Can be used as a stand-alone bootable image (e.g. on a USB stick), or as a tool from UEFI Shell or OpenCore bootloader.
 
 The idea is to let you quickly set some useful nvram values which would normally require booting all the way into macOS recovery.
 
 Features:
 
- - You can very quickly do the equivalent of `csrutil enable/disable` (Big Sur or Catalina settings).
+ - You can very quickly do the equivalent of `csrutil enable/disable` (Big Sur or Catalina settings)
 
- - You can quickly set `nvram boot-args="-no_compat_check"` (may be the only setting you need, after [installation](...), to run Big Sur on an only slightly incompatible mac).
+ - You can quickly set `nvram boot-args="-no_compat_check"`; which may be the only setting you need, after [installation](...), to run Big Sur on an only slightly incompatible Mac
 
- - You can quickly set/clear `StartupMute` (which doesn't require Recovery mode to set normally; I just found it useful to add it here).
+ - You can quickly set/clear `StartupMute` - this doesn't require Recovery mode to set normally; I just found it useful to add it here
 
- - There is also a basic - but hopefully useful - ability to list and view the value of every variable stored in your Mac's nvram.
+ - There is also a basic - but hopefully useful - ability to list and view the value of every variable stored in your Mac's nvram
 
 ## Usage
 
@@ -36,7 +36,7 @@ If you find the tool really useful, you could consider making a tiny (e.g. 20MB)
 
 ### Advanced
 
-To use as an OpenCore tool, copy `EFI\BOOT\BootHelper.efi` into the `EFI\OC\Tools` of an existing Open Core boot disk, and then configure this as a tool in the `Tools` section of `EFI\OC\config.plist` (following the pattern of any existing tools in there).
+To use as an OpenCore tool, copy `EFI\BOOT\BootHelper.efi` into the `EFI\OC\Tools` of an existing OpenCore boot disk, and then configure this as a tool in the `Tools` section of `EFI\OC\config.plist` (following the pattern of any existing tools in there).
 
 `BootHelper.efi` can also be run from OpenCore Open Shell or any other UEFI Shell, if you already have one configured.
 
@@ -52,6 +52,6 @@ At some point I'm hoping to move the project to a more standard EDK 2 set up, at
 
 ## Credits
 
-An early version was inspired by, and based on, Barry K. Nathan's setvars program from the big-sur-micropatcher.
+An early version was inspired by and based on Barry K. Nathan's setvars program from the big-sur-micropatcher.
 
 The code to enter console mode is taken from OpenCore and is used, and made available here, under the BSD license.
