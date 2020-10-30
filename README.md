@@ -22,7 +22,7 @@ Features:
 
 ### Standard Usage
 
-Download the current [release zip file](...).
+Download the current [release zip file](./releases/download/0.1.0/BootHelper.zip).
 
 Copy the entire EFI folder from the zip file into the root of any FAT32 USB drive. No other files on the drive need to be deleted. If you boot up your Mac while holding down Alt/Option then you should see your USB drive listed as 'Boot Helper', and you can boot from it to start the utilty.
 
@@ -46,7 +46,7 @@ These are just the settings I wanted to be able to change quickly. I am hoping t
 
 ## Development/Contribution
 
-The code is currently written using `VisualUefi` - largely because getting started with EDK2 development is hard, and this seemed like a do-able way to start. To use the code as is, you need to develop on Windows. Please check out with `git config core.autocrlf` = `true`.
+The code is currently written using `VisualUefi` - largely because getting started with EDK2 development is hard, and this seemed like a do-able way to start. To use the code as is, you need to develop on Windows. Please check in and out with `git config core.autocrlf` = `true`.
 
 At some point I'm hoping to move the project to a more standard EDK 2 set up, at which point I'll probably rename the repo to `BootHelperPkg` (the current url should get redirected by GitHub).
 
