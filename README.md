@@ -12,7 +12,7 @@ Features:
 
  - You can very quickly do the equivalent of `csrutil enable/disable` (Big Sur or Catalina settings)
 
- - You can quickly set `nvram boot-args="-no_compat_check"`; which may be the only setting you need, after [installation](...), to run Big Sur on an only slightly incompatible Mac
+ - You can quickly set `nvram boot-args="-no_compat_check"`; which may be the only setting you need, after [installation](https://forums.macrumors.com/threads/macos-11-big-sur-on-unsupported-macs-thread.2242172/page-181?post=28960530#post-28960530), to run Big Sur on an only slightly incompatible Mac
 
  - You can quickly set/clear `StartupMute` - this doesn't require Recovery mode to set normally; I just found it useful to add it here
 
@@ -46,12 +46,14 @@ These are just the settings I wanted to be able to change quickly. I am hoping t
 
 ## Development/Contribution
 
-The code is currently written using `VisualUefi` - largely because getting started with EDK2 development is hard, and this seemed like a do-able way to start. To use the code as is, you need to develop on Windows. Please check in and out with `git config core.autocrlf` = `true`.
+The code is currently set up to compile using [VisualUefi](https://github.com/ionescu007/VisualUefi) - largely because getting started with EDK2 development is hard, and this seemed like a do-able way to get going. To use the code as is, you need to develop on Windows. On Windows only, please check in and out with `git config core.autocrlf` = `true` - the line endings in the repo are LF.
 
-At some point I'm hoping to move the project to a more standard EDK 2 set up, at which point I'll probably rename the repo to `BootHelperPkg` (the current url should get redirected by GitHub).
+The code up to [this tag](./tree/last-edk1) was built in EDK 1 and compiles fine on Linux and macOS (with [these prerequisites](https://forums.macrumors.com/threads/macos-11-big-sur-on-unsupported-macs-thread.2242172/page-202?post=29009038#post-29009038)).
+
+As long as I can get Xcode QEMU support working (I'm currently very much enjoying the VisualUefi QEMU support) I'm planning to move the project back to a more standard EDK 2 set up, at which point I'll probably rename the repo to `BootHelperPkg` (the current url should get redirected by GitHub).
 
 ## Credits
 
-An early version was inspired by and based on Barry K. Nathan's setvars program from the big-sur-micropatcher.
+An early version was inspired by and based on Barry K. Nathan's [setvars](https://github.com/barrykn/big-sur-micropatcher/tree/main/setvars) program from the big-sur-micropatcher.
 
-The code to enter console mode is taken from OpenCore and is used, and made available here, under the BSD license.
+The code to enter console mode is taken from [OpenCore](https://github.com/acidanthera/OpenCorePkg) and is used, and made available here, under the BSD license.
