@@ -487,7 +487,7 @@ STATIC CHAR8 gGetVarBuffer[] = "-no_compat_check";
 
 STATIC UINT32 gFlags = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE;
 
-void ToggleVar(IN CHAR16 *varName, IN CHAR8 *preferredValue, UINTN actualSize)
+void ToggleOrSetVar(IN CHAR16 *varName, IN CHAR8 *preferredValue, UINTN actualSize, BOOLEAN toggle)
 {
 	UINT32 attr;
 
@@ -496,17 +496,41 @@ void ToggleVar(IN CHAR16 *varName, IN CHAR8 *preferredValue, UINTN actualSize)
 		data_size == actualSize &&
 		mymcmp(preferredValue, gGetVarBuffer, actualSize) == 0)
 	{
-		gRT->SetVariable(varName, &appleGUID, gFlags, 0, NULL);
+		if (toggle)
+		{
+			gRT->SetVariable(varName, &appleGUID, gFlags, 0, NULL);
+			//Print(L"Deleting %s\n", varName);
+		}
+		else
+		{
+			//Print(L"Not setting %s, already set\n", varName);
+		}
 	}
 	else
 	{
 		gRT->SetVariable(varName, &appleGUID, gFlags, actualSize, preferredValue);
+		//Print(L"Setting %s\n", varName);
 	}
+}
+
+void ToggleVar(IN CHAR16 *varName, IN CHAR8 *preferredValue, UINTN actualSize)
+{
+	ToggleOrSetVar(varName, preferredValue, actualSize, TRUE);
+}
+
+void SetVar(IN CHAR16 *varName, IN CHAR8 *preferredValue, UINTN actualSize)
+{
+	ToggleOrSetVar(varName, preferredValue, actualSize, FALSE);
 }
 
 void ToggleBootArgs()
 {
 	ToggleVar(L"boot-args", gBootArgsVal, sizeof(gBootArgsVal));
+}
+
+void SetBootArgs()
+{
+	SetVar(L"boot-args", gBootArgsVal, sizeof(gBootArgsVal));
 }
 
 void ToggleCsrActiveConfig(UINT32 value)
