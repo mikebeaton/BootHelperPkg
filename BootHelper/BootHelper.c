@@ -499,17 +499,17 @@ void ToggleOrSetVar(IN CHAR16 *varName, IN CHAR8 *preferredValue, UINTN actualSi
 		if (toggle)
 		{
 			gRT->SetVariable(varName, &appleGUID, gFlags, 0, NULL);
-			//Print(L"Deleting %s\n", varName);
+			Print(L"Deleting %s\n", varName);
 		}
 		else
 		{
-			//Print(L"Not setting %s, already set\n", varName);
+			Print(L"Not setting %s, already set\n", varName);
 		}
 	}
 	else
 	{
 		gRT->SetVariable(varName, &appleGUID, gFlags, actualSize, preferredValue);
-		//Print(L"Setting %s\n", varName);
+		Print(L"Setting %s\n", varName);
 	}
 }
 
@@ -572,104 +572,6 @@ UefiMain(
 	IN EFI_SYSTEM_TABLE* SystemTable
 )
 {
-	BOOLEAN showOCVersion = FALSE;
-
-	OcConsoleControlEntryMode(ImageHandle, SystemTable);
-
-	for (;;)
-	{
-		// inter alia, we want to clear the other stuff on the hidden text screen, before switching to viewing the text...
-		gST->ConOut->ClearScreen(gST->ConOut);
-
-		SetColour(EFI_LIGHTMAGENTA);
-		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.1.1\n");
-		SetColour(EFI_WHITE);
-		Print(L"\n");
-
-		//gRT->SetVariable(L"csr-active-config", &appleGUID, gFlags, 4, csrVal);
-		//gRT->SetVariable(L"EnableTRIM", &appleGUID, gFlags, 1, trimSetting);
-
-		//gRT->ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, NULL);
-
-		//efi_guid_t guid = EFI_GLOBAL_VARIABLE_GUID;
-
-		DisplayAppleNvramValue(L"boot-args", TRUE);
-		DisplayAppleNvramValue(L"csr-active-config", FALSE);
-		DisplayAppleNvramValue(L"StartupMute", TRUE);
-		if (showOCVersion)
-		{
-			DisplayNvramValue(&gEfiOpenCoreGuid, L"opencore-version", TRUE);
-		}
-
-		SetColour(EFI_LIGHTRED);
-		Print(L"\nboot-[A]rgs; [B]ig Sur; [C]atalina; Startup[M]ute\n[R]eboot; [S]hutdown; E[x]it; [L]ist\n");
-		SetColour(EFI_WHITE);
-
-		EFI_INPUT_KEY key;
-
-		for (;;)
-		{
-			//Print(L"Wait for key...\n");
-			getkeystroke(&key);
-			//Print(L"Got key %c (%x)\n", key.UnicodeChar, key.UnicodeChar);
-
-			CHAR16 c = key.UnicodeChar;
-			if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a';
-
-			if (c == L'a')
-			{
-				ToggleBootArgs();
-				break;
-			}
-			else if (c == L'c')
-			{
-				ToggleCsrActiveConfig(0x77);
-				break;
-			}
-			else if (c == L'b')
-			{
-				ToggleCsrActiveConfig(0x7f);
-				break;
-			}
-			else if (c == L'm')
-			{
-				ToggleStartupMute();
-				break;
-			}
-			//else if (c == L'o')
-			//{
-			//	showOCVersion = !showOCVersion;
-			//	break;
-			//}
-			else if (c == L'r')
-			{
-				Print(L"\nRebooting...");
-				Reboot();
-				break;
-			}
-			else if (c == L's')
-			{
-				Print(L"\nShutting down...");
-				Shutdown();
-				break;
-			}
-			else if (c == L'l')
-			{
-				Print(L"Listing... (any key; [Q]uit; [A]ll)\n");
-				if (EFI_ERROR(ListVars()))
-					Print(L"Listed.\n");
-				else
-					Print(L"Quit.\n");
-				Print(L"Any Key...\n");
-				getkeystroke(&key);
-				break;
-			}
-			else if (c == L'x')
-			{
-				Print(L"\nExiting...\n");
-				return EFI_SUCCESS;
-			}
-		}
-	}
+	SetBootArgs();
+	return EFI_SUCCESS;
 }
