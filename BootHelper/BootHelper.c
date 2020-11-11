@@ -145,7 +145,7 @@ void DisplayVarC8(const CHAR8* in, UINTN nChars, BOOLEAN isString)
 
 	if (nChars == 8)
 	{
-		Print(L" (0x%016x)", ((UINT64*)in)[0]);
+		Print(L" (0x%016lx)", ((UINT64*)in)[0]);
 	}
 	else if (nChars == 4)
 	{
@@ -426,7 +426,7 @@ void DisplayNvramValue(EFI_GUID *guid, CHAR16 *varName, BOOLEAN isString)
 
 		if (!isString && data_size == 8)
 		{
-			Print(L"0x%016x", ((UINT64*)buffer8)[0]);
+			Print(L"0x%016lx", ((UINT64*)buffer8)[0]);
 		}
 		else if (!isString && data_size == 4)
 		{
@@ -583,7 +583,7 @@ UefiMain(
 
 		SetColour(EFI_LIGHTMAGENTA);
 		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.1.1\n");
+		Print(L"0.1.2\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
