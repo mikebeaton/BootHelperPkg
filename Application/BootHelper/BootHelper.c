@@ -7,7 +7,7 @@
 #include <Library/MemoryAllocationLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/BaseLib.h>
-#include <Protocol/ConsoleControl/ConsoleControl.h>
+#include "ConsoleControl.h" //<Protocol/ConsoleControl/ConsoleControl.h>
 
 //
 // Boot and Runtime Services
@@ -23,12 +23,12 @@
 //
 // We run on any UEFI Specification
 //
-extern CONST UINT32 _gUefiDriverRevision = 0;
+//extern CONST UINT32 _gUefiDriverRevision = 0;
 
 //
 // Our name
 //
-CHAR8 *gEfiCallerBaseName = "BootHelper";
+//CHAR8 *gEfiCallerBaseName = "BootHelper";
 
 EFI_STATUS
 EFIAPI
@@ -40,6 +40,7 @@ UefiUnload (
     // This code should be compiled out and never called 
     // 
     ASSERT(FALSE);
+    return EFI_SUCCESS;
 }
 
 EFI_STATUS
@@ -297,7 +298,7 @@ EFI_STATUS ListVars()
 		//
 #if 1
 		Print(L" = ");
-		DisplayVar(&Guid, Data, DataSize, TRUE);
+		DisplayVar(&Guid, (CHAR8 *)Data, DataSize, TRUE);
 #else
 		UINTN Index;
 		for (Index = 0; Index < DataSize; Index++) {
@@ -583,7 +584,7 @@ UefiMain(
 
 		SetColour(EFI_LIGHTMAGENTA);
 		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.1.3\n");
+		Print(L"0.1.3 - edk2!\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
