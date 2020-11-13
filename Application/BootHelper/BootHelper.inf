@@ -28,7 +28,6 @@
 [Packages]
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
-  OpenCorePkg/OpenCorePkg.dec
 
 [LibraryClasses]
   BaseLib
@@ -38,3 +37,4 @@
   BaseMemoryLib
   MemoryAllocationLib
   UefiApplicationEntryPoint
+  OcConsoleControlEntryModeGenericLib

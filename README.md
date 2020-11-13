@@ -58,6 +58,6 @@ The code up to [this tag](../../tree/last-edk1) was built in EDK 1 and compiles 
 
 ## Credits
 
-The very earliest (EDK 1) version was inspired by and based on Barry K. Nathan's [setvars](https://github.com/barrykn/big-sur-micropatcher/tree/main/setvars) program from the [big-sur-micropatcher](https://github.com/barrykn/big-sur-micropatcher); since then the project has been completely re-written and now does much more, much more configurably, than setvars so I hope it's a reasonable decision to treat it as a separate project now.
+The earliest (EDK 1) version was inspired by and based on Barry K. Nathan's [setvars](https://github.com/barrykn/big-sur-micropatcher/tree/main/setvars) program from the [big-sur-micropatcher](https://github.com/barrykn/big-sur-micropatcher); since then the project has been completely re-written and now does much more, much more configurably, than setvars so I hope it's a reasonable decision to treat it as a separate project.
 
-The current code in this project for entering console mode is taken from [OpenCore](https://github.com/acidanthera/OpenCorePkg) and is used, and made available here, under the BSD license. (However that copy of a small piece of OC code should cease to need to be in this library at all shortly, once I have it linking against the relevant OC library.)
+Earlier versions had code copied from [OpenCore](https://github.com/acidanthera/OpenCorePkg) for entering console mode which was used, and made available here, under the BSD license. We are now correctly linking to OC and letting it start console mode for us. Next, we are hoping to get OC to read plist files for us, too. Thank you, OC!

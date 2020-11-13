@@ -7,7 +7,6 @@
 #include <Library/MemoryAllocationLib.h>
 ////#include <Library/BaseMemoryLib.h>
 ////#include <Library/BaseLib.h>
-#include <Protocol/ConsoleControl.h>
 
 //
 // Boot and Runtime Services
@@ -44,45 +43,6 @@ UefiUnload (
     return EFI_SUCCESS;
 }
 #endif
-
-EFI_STATUS
-EFIAPI
-OcConsoleControlEntryMode(
-	IN EFI_HANDLE        ImageHandle,
-	IN EFI_SYSTEM_TABLE  *SystemTable
-)
-{
-	EFI_STATUS                   Status;
-	EFI_CONSOLE_CONTROL_PROTOCOL *ConsoleControl;
-
-	EFI_GUID efiConsoleControlProtocolGuid = EFI_CONSOLE_CONTROL_PROTOCOL_GUID;
-
-	//
-	// On several types of firmware, we need to use legacy console control protocol to
-	// switch to text mode, otherwise a black screen will be shown.
-	//
-	Status = gBS->HandleProtocol(
-		gST->ConsoleOutHandle,
-		&efiConsoleControlProtocolGuid,
-		(VOID **)&ConsoleControl
-	);
-	if (EFI_ERROR(Status)) {
-		Status = gBS->LocateProtocol(
-			&efiConsoleControlProtocolGuid,
-			NULL,
-			(VOID **)&ConsoleControl
-		);
-	}
-
-	if (!EFI_ERROR(Status)) {
-		ConsoleControl->SetMode(
-			ConsoleControl,
-			0
-		);
-	}
-
-	return EFI_SUCCESS;
-}
 
 // ReadKeyStroke returns EFI_NOT_READY if no key available
 // ReadKeyStroke returns EFI_SUCCESS if a key is available
@@ -577,8 +537,6 @@ UefiMain(
 {
 	BOOLEAN showOCVersion = FALSE;
 
-	OcConsoleControlEntryMode(ImageHandle, SystemTable);
-
 	for (;;)
 	{
 		// inter alia, we want to clear the other stuff on the hidden text screen, before switching to viewing the text...
@@ -586,7 +544,7 @@ UefiMain(
 
 		SetColour(EFI_LIGHTMAGENTA);
 		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.1.3 - con link too\n");
+		Print(L"0.1.3 - oc con link three\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
