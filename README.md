@@ -46,14 +46,18 @@ These are just the settings I wanted to be able to change quickly. I am hoping t
 
 ## Development/Contribution
 
-The code is currently set up to compile using [VisualUefi](https://github.com/ionescu007/VisualUefi) - largely because getting started with EDK2 development is hard, and this seemed like a do-able way to get going. To use the code as is, you need to develop on Windows. On Windows only, please check in and out with `git config core.autocrlf` = `true` - the line endings in the repo are LF.
+The code now compiles in a normal EDK 2 environment, and I'm in the process of linking to the OpenCore libraries I want to use.
 
-The code up to [this tag](../../tree/last-edk1) was built in EDK 1 and compiles fine on Linux (with [these prerequisites](https://forums.macrumors.com/threads/macos-11-big-sur-on-unsupported-macs-thread.2242172/page-202?post=29009038#post-29009038)).
+### Earier versions
 
-As long as I can get Xcode QEMU support working (I'm currently very much enjoying the VisualUefi QEMU support) I'm planning to move the project back to a more standard EDK 2 set up, at which point I'll probably rename the repo to `BootHelperPkg` (the current url should get redirected by GitHub).
+The code up to [this tag](../../tree/last-visualuefi) was built using [VisualUefi](https://github.com/ionescu007/VisualUefi) for Windows - which is a helpful stepping stone between EDK 1 and the full EDK 2 development environment. If the project did not link against various parts of OpenCore, there'd be no real reason not to leave in the VisualUefi support and have the project buildable in both VisualUefi and EDK 2; since it does, it's almost certainly not sensible to do the additional work required to make VisualUefi build the required parts of OC (especially since OC itself is likely to change more, and more often, than the EDK2 library).
+
+If you are playing around with the Windows-compilable (i.e. VisualUefi) version of the code, you are strongly recommended to use git with `core.autocrlf` set to true `true` because the line endings in the repo are LF.
+
+The code up to [this tag](../../tree/last-edk1) was built in EDK 1 and compiles fine just with `gcc` on Linux against the basic EDK 1 header files, with [these prerequisites](https://forums.macrumors.com/threads/macos-11-big-sur-on-unsupported-macs-thread.2242172/page-202?post=29009038#post-29009038).
 
 ## Credits
 
-An early version was inspired by and based on Barry K. Nathan's [setvars](https://github.com/barrykn/big-sur-micropatcher/tree/main/setvars) program from the big-sur-micropatcher.
+The very earliest (EDK 1) version was inspired by and based on Barry K. Nathan's [setvars](https://github.com/barrykn/big-sur-micropatcher/tree/main/setvars) program from the [big-sur-micropatcher](https://github.com/barrykn/big-sur-micropatcher); since then the project has been completely re-written and now does much more, much more configurably, than setvars so I hope it's a reasonable decision to treat it as a separate project now.
 
-The code to enter console mode is taken from [OpenCore](https://github.com/acidanthera/OpenCorePkg) and is used, and made available here, under the BSD license.
+The current code in this project for entering console mode is taken from [OpenCore](https://github.com/acidanthera/OpenCorePkg) and is used, and made available here, under the BSD license. (However that copy of a small piece of OC code should cease to need to be in this library at all shortly, once I have it linking against the relevant OC library.)
