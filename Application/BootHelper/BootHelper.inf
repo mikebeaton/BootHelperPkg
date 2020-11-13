@@ -27,24 +27,13 @@
 
 [Packages]
   MdePkg/MdePkg.dec
-  ShellPkg/ShellPkg.dec
   MdeModulePkg/MdeModulePkg.dec
 
 [LibraryClasses]
-  HiiLib
-  UefiHiiServicesLib
-  SortLib
-  ShellLib
   BaseLib
-  DebugPrintErrorLevelLib
-  PrintLib
   UefiLib
   UefiBootServicesTableLib
   UefiRuntimeServicesTableLib
-  DevicePathLib
-  DebugLib
   BaseMemoryLib
   MemoryAllocationLib
-  SynchronizationLib
-  FileHandleLib
   UefiApplicationEntryPoint
