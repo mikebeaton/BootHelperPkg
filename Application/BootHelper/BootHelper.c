@@ -7,7 +7,7 @@
 #include <Library/MemoryAllocationLib.h>
 ////#include <Library/BaseMemoryLib.h>
 ////#include <Library/BaseLib.h>
-#include "ConsoleControl.h" //<Protocol/ConsoleControl/ConsoleControl.h>
+#include <Protocol/ConsoleControl.h>
 
 //
 // Boot and Runtime Services
@@ -586,7 +586,7 @@ UefiMain(
 
 		SetColour(EFI_LIGHTMAGENTA);
 		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.1.3 - even less\n");
+		Print(L"0.1.3 - con link too\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
