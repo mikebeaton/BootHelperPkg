@@ -5,7 +5,7 @@
 #include <Library/UefiLib.h>
 //#include <Library/DebugLib.h>
 #include <Library/MemoryAllocationLib.h>
-////#include <Library/BaseMemoryLib.h>
+#include <Library/BaseMemoryLib.h>
 ////#include <Library/BaseLib.h>
 
 //
@@ -57,15 +57,6 @@ EFI_STATUS getkeystroke(EFI_INPUT_KEY *Key)
 {
 	gBS->WaitForEvent(1, &gST->ConIn->WaitForKey, 0);
 	return gST->ConIn->ReadKeyStroke(gST->ConIn, Key);
-}
-
-int mymcmp(CONST IN CHAR8 *buf1, CONST IN CHAR8 *buf2, UINTN size)
-{
-	for (UINTN i = 0; i < size; i++)
-	{
-		if (buf1[i] - buf2[i] != 0) return buf1[i] - buf2[i];
-	}
-	return 0;
 }
 
 CHAR16 HexChar(CHAR16 c)
@@ -151,8 +142,8 @@ void DisplayVar(const EFI_GUID *Guid, const CHAR8* in, UINTN size, BOOLEAN isStr
 {
 	// some known guid's which seem to have only CHAR16 strings in them
 	if ((size & 1) == 0 &&
-		(mymcmp((CHAR8 *)Guid, (CHAR8 *)&gEfiQemuC16lGuid1, sizeof(EFI_GUID)) == 0 ||
-		 mymcmp((CHAR8 *)Guid, (CHAR8 *)&gEfiQemuC16lGuid2, sizeof(EFI_GUID)) == 0))
+		(CompareMem((CHAR8 *)Guid, (CHAR8 *)&gEfiQemuC16lGuid1, sizeof(EFI_GUID)) == 0 ||
+		 CompareMem((CHAR8 *)Guid, (CHAR8 *)&gEfiQemuC16lGuid2, sizeof(EFI_GUID)) == 0))
 	{
 		DisplayVarC16((CHAR16 *)in, size >> 1, isString);
 	}
@@ -457,7 +448,7 @@ void ToggleOrSetVar(IN CHAR16 *varName, IN CHAR8 *preferredValue, UINTN actualSi
 	UINTN data_size = actualSize;
 	if (!EFI_ERROR(gRT->GetVariable(varName, &appleGUID, &attr, &data_size, gGetVarBuffer)) &&
 		data_size == actualSize &&
-		mymcmp(preferredValue, gGetVarBuffer, actualSize) == 0)
+		CompareMem(preferredValue, gGetVarBuffer, actualSize) == 0)
 	{
 		if (toggle)
 		{
@@ -544,7 +535,7 @@ UefiMain(
 
 		SetColour(EFI_LIGHTMAGENTA);
 		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.1.3 - oc con link three\n");
+		Print(L"0.1.3 - oc con link nincomp\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
