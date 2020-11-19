@@ -535,7 +535,7 @@ UefiMain(
 
 		SetColour(EFI_LIGHTMAGENTA);
 		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.1.3 - oc con link nincomp\n");
+		Print(L"0.1.3 - oc libs\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
