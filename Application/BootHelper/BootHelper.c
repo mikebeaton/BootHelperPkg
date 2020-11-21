@@ -20,6 +20,12 @@
 //#include <Library/ShellLib.h>
 
 //
+// Local includes
+//
+#include "EzKb.h"
+#include "DisplayVar.h"
+
+//
 // We run on any UEFI Specification
 //
 //extern CONST UINT32 _gUefiDriverRevision = 0;
@@ -44,114 +50,9 @@ UefiUnload (
 }
 #endif
 
-// ReadKeyStroke returns EFI_NOT_READY if no key available
-// ReadKeyStroke returns EFI_SUCCESS if a key is available
-// It will not wait for a key to be available.
-EFI_STATUS kbhit(EFI_INPUT_KEY *Key)
-{
-	return gST->ConIn->ReadKeyStroke(gST->ConIn, Key);
-}
-
-// Wait for a key to be available, then read the key using ReadKeyStrokes
-EFI_STATUS getkeystroke(EFI_INPUT_KEY *Key)
-{
-	gBS->WaitForEvent(1, &gST->ConIn->WaitForKey, 0);
-	return gST->ConIn->ReadKeyStroke(gST->ConIn, Key);
-}
-
-CHAR16 HexChar(CHAR16 c)
-{
-	if (c < 10) return c + L'0';
-	else return c - 10 + L'a';
-}
-
 #define EFI_OPEN_CORE_GUID \
   { 0x4d1fda02, 0x38c7, 0x4a6a, {0x9c, 0xc6, 0x4b, 0xcc, 0xa8, 0xb3, 0x01, 0x02} }
 STATIC EFI_GUID gEfiOpenCoreGuid = EFI_OPEN_CORE_GUID;
-
-#define EFI_QEMU_C16_GUID_1 \
-  { 0x158DEF5A, 0xF656, 0x419C, {0xB0, 0x27, 0x7A, 0x31, 0x92, 0xC0, 0x79, 0xD2} }
-#define EFI_QEMU_C16_GUID_2 \
-  { 0x0053D9D6, 0x2659, 0x4599, {0xA2, 0x6B, 0xEF, 0x45, 0x36, 0xE6, 0x31, 0xA9} }
-
-STATIC EFI_GUID gEfiQemuC16lGuid1 = EFI_QEMU_C16_GUID_1;
-STATIC EFI_GUID gEfiQemuC16lGuid2 = EFI_QEMU_C16_GUID_2;
-
-void DisplayVarC8(const CHAR8* in, UINTN nChars, BOOLEAN isString)
-{
-	Print(L"\"");
-	for (UINTN i = 0; i < nChars; i++)
-	{
-		CHAR8 c = in[i];
-		if (isString && c >= 32 && c < 127)
-		{
-			Print(L"%c", (CHAR16)c);
-			if (c == '%') Print(L"%%"); // escape % so that representation is unambiguous & reversible
-		}
-		else
-		{
-			Print(L"%%");
-			Print(L"%c", HexChar((in[i] >> 4) & 0xF));
-			Print(L"%c", HexChar(in[i] & 0xF));
-		}
-	}
-	Print(L"\"");
-
-	if (nChars == 8)
-	{
-		Print(L" (0x%016lx)", ((UINT64*)in)[0]);
-	}
-	else if (nChars == 4)
-	{
-		Print(L" (0x%08x)", ((UINT32*)in)[0]);
-	}
-	else if (nChars == 2)
-	{
-		Print(L" (0x%04x)", ((UINT16*)in)[0]);
-	}
-	else if (nChars == 1)
-	{
-		Print(L" (0x%02x)", ((UINT8*)in)[0]);
-	}
-}
-
-void DisplayVarC16(const CHAR16* in, UINTN nChars, BOOLEAN isString)
-{
-	Print(L"L\"");
-	for (UINTN i = 0; i < nChars; i++)
-	{
-		CHAR16 c = in[i];
-		if (isString && c >= 32)
-		{
-			Print(L"%c", c);
-			if (c == L'%') Print(L"%%"); // escape % so that representation is unambiguous & reversible
-		}
-		else
-		{
-			Print(L"%%");
-			Print(L"%c", HexChar((in[i] >> 12) & 0xF));
-			Print(L"%c", HexChar((in[i] >> 8) & 0xF));
-			Print(L"%c", HexChar((in[i] >> 4) & 0xF));
-			Print(L"%c", HexChar(in[i] & 0xF));
-		}
-	}
-	Print(L"\"");
-}
-
-void DisplayVar(const EFI_GUID *Guid, const CHAR8* in, UINTN size, BOOLEAN isString)
-{
-	// some known guid's which seem to have only CHAR16 strings in them
-	if ((size & 1) == 0 &&
-		(CompareMem((CHAR8 *)Guid, (CHAR8 *)&gEfiQemuC16lGuid1, sizeof(EFI_GUID)) == 0 ||
-		 CompareMem((CHAR8 *)Guid, (CHAR8 *)&gEfiQemuC16lGuid2, sizeof(EFI_GUID)) == 0))
-	{
-		DisplayVarC16((CHAR16 *)in, size >> 1, isString);
-	}
-	else
-	{
-		DisplayVarC8(in, size, isString);
-	}
-}
 
 EFI_STATUS ListVars()
 {
@@ -181,16 +82,16 @@ EFI_STATUS ListVars()
 	{
 		do {
 			//Print(L"-b");
-			  //
-			  // Loop until a large a large enough variable name buffer is allocated
-			  // do {
+			//
+			// Loop until a large a large enough variable name buffer is allocated
+			// do {
 			NameSize = NameBufferSize;
 			Status = gRT->GetNextVariableName(&NameSize, Name, &Guid);
 			if (Status == EFI_BUFFER_TOO_SMALL) {
 				//Print(L"-c");
-					//
-					// Grow the buffer Name to NameSize bytes
-					//
+				//
+				// Grow the buffer Name to NameSize bytes
+				//
 				Name = ReallocatePool(NameBufferSize, NameSize, Name);
 				if (Name == NULL) {
 					return EFI_OUT_OF_RESOURCES;
@@ -227,9 +128,9 @@ EFI_STATUS ListVars()
 			Status = gRT->GetVariable(Name, &Guid, NULL, &DataSize, Data);
 			if (Status == EFI_BUFFER_TOO_SMALL) {
 				//Print(L"-f");
-					//
-					// Allocate new buffer for the variable data
-					//
+				//
+				// Allocate new buffer for the variable data
+				//
 				Data = AllocatePool(DataSize);
 				if (Data == NULL) {
 					FreePool(Name);
@@ -282,23 +183,8 @@ EFI_STATUS ListVars()
 				showAll = TRUE;
 			}
 		}
-
 	}
 }
-
-#define PRINT_BUF_SIZE 1024
-
-#if 0
-void MyPrint(CONST CHAR16 *format, ...)
-{
-	CHAR16 buffer[PRINT_BUF_SIZE];
-	va_list args;
-	va_start(args, format);
-	VSPrint(buffer, PRINT_BUF_SIZE, format, args);
-	va_end(args);
-	conOut->OutputString(conOut, buffer);
-}
-#endif
 
 EFI_STATUS SetColour(UINTN Attribute)
 {
@@ -535,7 +421,7 @@ UefiMain(
 
 		SetColour(EFI_LIGHTMAGENTA);
 		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.1.3 - sort oc libs\n");
+		Print(L"0.1.3 - xyz\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
