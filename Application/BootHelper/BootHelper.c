@@ -170,7 +170,7 @@ UefiMain(
 #endif
 		if (showOCVersion)
 		{
-			DisplayNvramValue(&gEfiOpenCoreGuid, L"opencore-version", TRUE);
+			DisplayNvramValueWithoutGuid(&gEfiOpenCoreGuid, L"opencore-version", TRUE);
 		}
 
 		SetColour(EFI_LIGHTRED);
