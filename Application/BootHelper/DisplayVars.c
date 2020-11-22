@@ -184,7 +184,9 @@ DisplayNvramValueOptionalGuid (
 
     Print(L" = ");
     DisplayVar(Guid, Data, DataSize, TRUE);
-	Print(L" (%spersistent)", (Attributes & EFI_VARIABLE_NON_VOLATILE) == 0 ? L"non-" : L"");
+	if ((Attributes & EFI_VARIABLE_NON_VOLATILE) == 0) {
+		Print(L" (non-persistent)");
+	}
     Print(L"\n");
 
     FreePool(Data);
