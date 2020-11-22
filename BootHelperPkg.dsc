@@ -55,17 +55,32 @@
 [Components]
   BootHelperPkg/Application/BootHelper/BootHelper.inf
 
+# As OC to enable OC debugging macros
 [PcdsFixedAtBuild]
+  gEfiMdePkgTokenSpaceGuid.PcdMaximumAsciiStringLength|0
+!if $(TARGET) == RELEASE
+  # DEBUG_PRINT_ENABLED
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|2
+  # DEBUG_ERROR | DEBUG_WARN
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80000002
+  gEfiMdePkgTokenSpaceGuid.PcdFixedDebugPrintErrorLevel|0x80000002
+!else
+  # DEBUG_ASSERT_ENABLED | DEBUG_PRINT_ENABLED | DEBUG_CODE_ENABLED | CLEAR_MEMORY_ENABLED | ASSERT_DEADLOOP_ENABLED
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x2f
+  # DEBUG_ERROR | DEBUG_WARN | DEBUG_INFO
+  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80000042
+  gEfiMdePkgTokenSpaceGuid.PcdFixedDebugPrintErrorLevel|0x80000042
+!endif
 
 [BuildOptions]
-  MSFT:NOOPT_*_*_CC_FLAGS    = -D OC_TARGET_RELEASE=1 /FAcs -Dinline=__inline
-  MSFT:DEBUG_*_*_CC_FLAGS    = -D OC_TARGET_RELEASE=1 /FAcs -Dinline=__inline -DMDEPKG_NDEBUG
-  MSFT:RELEASE_*_*_CC_FLAGS  = -D OC_TARGET_RELEASE=1 /FAcs -Dinline=__inline -DMDEPKG_NDEBUG
+  MSFT:NOOPT_*_*_CC_FLAGS    = -D OC_TARGET_NOOPT=1 /FAcs -Dinline=__inline
+  MSFT:DEBUG_*_*_CC_FLAGS    = -D OC_TARGET_DEBUG=1 /FAcs -Dinline=__inline
+  MSFT:RELEASE_*_*_CC_FLAGS  = -D OC_TARGET_RELEASE=1 /FAcs -Dinline=__inline
 
-  XCODE:NOOPT_*_*_CC_FLAGS   = -D OC_TARGET_RELEASE=1 -fno-unwind-tables -O0
-  XCODE:DEBUG_*_*_CC_FLAGS   = -D OC_TARGET_RELEASE=1 -fno-unwind-tables -flto -Os -DMDEPKG_NDEBUG
-  XCODE:RELEASE_*_*_CC_FLAGS = -D OC_TARGET_RELEASE=1 -fno-unwind-tables -flto -Os -DMDEPKG_NDEBUG
+  XCODE:NOOPT_*_*_CC_FLAGS   = -D OC_TARGET_NOOPT=1 -fno-unwind-tables -O0
+  XCODE:DEBUG_*_*_CC_FLAGS   = -D OC_TARGET_DEBUG=1 -fno-unwind-tables -flto -Os
+  XCODE:RELEASE_*_*_CC_FLAGS = -D OC_TARGET_RELEASE=1 -fno-unwind-tables -flto -Os
 
-  GCC:NOOPT_*_*_CC_FLAGS     = -D OC_TARGET_RELEASE=1 -Wno-unused-but-set-variable
-  GCC:DEBUG_*_*_CC_FLAGS     = -D OC_TARGET_RELEASE=1 -DMDEPKG_NDEBUG -Wno-unused-but-set-variable
-  GCC:RELEASE_*_*_CC_FLAGS   = -D OC_TARGET_RELEASE=1 -DMDEPKG_NDEBUG -Wno-unused-but-set-variable
+  GCC:NOOPT_*_*_CC_FLAGS     = -D OC_TARGET_NOOPT=1 -Wno-unused-but-set-variable
+  GCC:DEBUG_*_*_CC_FLAGS     = -D OC_TARGET_DEBUG=1 -Wno-unused-but-set-variable
+  GCC:RELEASE_*_*_CC_FLAGS   = -D OC_TARGET_RELEASE=1 -Wno-unused-but-set-variable

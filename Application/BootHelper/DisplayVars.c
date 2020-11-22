@@ -11,16 +11,19 @@
 //
 #include <Uefi.h>
 #include <Library/UefiLib.h>
-//#include <Library/DebugLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/BaseMemoryLib.h>
-////#include <Library/BaseLib.h>
 
 //
 // Boot and Runtime Services
 //
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeServicesTableLib.h>
+
+//
+// OC Libraries
+//
+#include <Library/OcDebugLogLib.h>
 
 //
 // Local includes
@@ -147,7 +150,11 @@ GetNvramValue (
     } while (Status == EFI_BUFFER_TOO_SMALL);
 
     if (EFI_ERROR(Status)) {
-        FreePool(*Data);
+		if (*Data == NULL) {
+			ASSERT (Status == EFI_NOT_FOUND);
+		} else {
+			FreePool(*Data);
+		}
         return Status;
     }
 

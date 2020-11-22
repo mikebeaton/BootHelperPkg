@@ -44,7 +44,7 @@
   MdeModulePkg/MdeModulePkg.dec
 ## From a quick test, we do not need this here in order to pick up OpenCore PCD values specified in OpenCorePkg.dec
 ## such as PcdConsoleControlEntryMode; the build reflects changes made there even without this here
-#  OpenCorePkg/OpenCorePkg.dec
+  OpenCorePkg/OpenCorePkg.dec
 
 [LibraryClasses]
   BaseLib

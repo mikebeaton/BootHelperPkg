@@ -2,11 +2,8 @@
 // Basic UEFI Libraries
 //
 #include <Uefi.h>
-#include <Library/UefiLib.h>
-//#include <Library/DebugLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/BaseMemoryLib.h>
-////#include <Library/BaseLib.h>
 
 //
 // Boot and Runtime Services
@@ -15,9 +12,17 @@
 #include <Library/UefiRuntimeServicesTableLib.h>
 
 //
+// OC Libraries
+//
+#include <Library/OcDebugLogLib.h>
+#include <Library/OcFileLib.h>
+
+//
 // Shell Library
 //
 //#include <Library/ShellLib.h>
+
+#include <Protocol/LoadedImage.h>
 
 //
 // Local includes
@@ -28,7 +33,7 @@
 #include "Utils.h"
 
 BOOLEAN mInteractive = TRUE;
-BOOLEAN mClearScreen = TRUE;
+BOOLEAN mClearScreen = FALSE;
 
 //
 // We run on any UEFI Specification
@@ -117,10 +122,9 @@ void ToggleStartupMute()
 
 EFI_STATUS
 EFIAPI
-UefiMain(
-	IN EFI_HANDLE ImageHandle,
-	IN EFI_SYSTEM_TABLE* SystemTable
-)
+BhMain (
+  EFI_SIMPLE_FILE_SYSTEM_PROTOCOL   *FileSystem
+  )
 {
 	BOOLEAN showOCVersion = FALSE;
 
@@ -131,7 +135,7 @@ UefiMain(
 
 		SetColour(EFI_LIGHTMAGENTA);
 		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.2.5\n");
+		Print(L"0.2.6\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
@@ -225,4 +229,81 @@ UefiMain(
 			}
 		}
 	}
+}
+
+VOID
+DebugDebug (
+  IN EFI_HANDLE        ImageHandle,
+  IN EFI_SYSTEM_TABLE  *SystemTable
+  )
+{
+  EFI_STATUS Status;
+
+  OC_LOG_PROTOCOL *mInternalOcLog = NULL;
+  Status = gBS->LocateProtocol (
+    &gOcLogProtocolGuid,
+    NULL,
+    (VOID **) &mInternalOcLog
+  );
+  Print (L"Located OcLogProtocol=%d (EFI_NOT_FOUND=%d)\n", Status, EFI_NOT_FOUND);
+
+  Print (L"DebugPrintEnabled=%d\n", DebugPrintEnabled());
+  Print (L"DebugPrintLevelEnabled(DEBUG_INFO)=%d\n", DebugPrintLevelEnabled(DEBUG_INFO));
+
+#if !defined(MDEPKG_NDEBUG)
+  Print (L"Debug seems enabled\n");
+#else
+  Print (L"Debug not enabled!\n");
+#endif
+}
+
+EFI_STATUS
+EFIAPI
+UefiMain (
+  IN EFI_HANDLE        ImageHandle,
+  IN EFI_SYSTEM_TABLE  *SystemTable
+  )
+{
+  //DebugDebug (ImageHandle, SystemTable);
+
+  EFI_STATUS                        Status;
+  EFI_LOADED_IMAGE_PROTOCOL         *LoadedImage;
+  EFI_SIMPLE_FILE_SYSTEM_PROTOCOL   *FileSystem;
+
+  DEBUG ((DEBUG_INFO, "BH: Starting BootHelper...\n"));
+
+  LoadedImage = NULL;
+  Status = gBS->HandleProtocol (
+    ImageHandle,
+    &gEfiLoadedImageProtocolGuid,
+    (VOID **) &LoadedImage
+    );
+
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "BH: Failed to locate loaded image - %r\n", Status));
+    return EFI_NOT_FOUND;
+  }
+
+  DebugPrintDevicePath (DEBUG_INFO, "BH: Booter path", LoadedImage->FilePath);
+
+  //
+  // Obtain the file system device path
+  //
+  FileSystem = LocateFileSystem (
+    LoadedImage->DeviceHandle,
+    LoadedImage->FilePath
+    );
+
+  if (FileSystem == NULL) {
+    DEBUG ((DEBUG_ERROR, "BH: Failed to obtain own file system\n"));
+    return EFI_NOT_FOUND;
+  }
+
+#if 1
+  Status = BhMain (FileSystem);
+
+  return Status;
+#else
+  return EFI_SUCCESS;
+#endif
 }
