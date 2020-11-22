@@ -22,8 +22,13 @@
 //
 // Local includes
 //
+#include "BootHelper.h"
 #include "EzKb.h"
 #include "DisplayVars.h"
+#include "Utils.h"
+
+BOOLEAN mInteractive = TRUE;
+BOOLEAN mClearScreen = TRUE;
 
 //
 // We run on any UEFI Specification
@@ -54,27 +59,9 @@ UefiUnload (
   { 0x4d1fda02, 0x38c7, 0x4a6a, {0x9c, 0xc6, 0x4b, 0xcc, 0xa8, 0xb3, 0x01, 0x02} }
 STATIC EFI_GUID gEfiOpenCoreGuid = EFI_OPEN_CORE_GUID;
 
-EFI_STATUS SetColour(UINTN Attribute)
-{
-	return gST->ConOut->SetAttribute(gST->ConOut, Attribute);
-}
-
-void Shutdown()
-{
-	gRT->ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, NULL);
-}
-
-void Reboot()
-{
-	gRT->ResetSystem(EfiResetWarm, EFI_SUCCESS, 0, NULL);
-}
-
-static EFI_GUID appleGUID = { 0x7c436110, 0xab2a, 0x4bbb, {0xa8, 0x80, 0xfe, 0x41, 0x99, 0x5c, 0x9f, 0x82} };
-
-void DisplayAppleNvramValue(CHAR16 *varName, BOOLEAN isString)
-{
-	DisplayNvramValueWithoutGuid(&appleGUID, varName, isString);
-}
+#define EFI_APPLE_GUID \
+  { 0x7c436110, 0xab2a, 0x4bbb, {0xa8, 0x80, 0xfe, 0x41, 0x99, 0x5c, 0x9f, 0x82} }
+STATIC EFI_GUID gEfiAppleGuid = EFI_APPLE_GUID;
 
 // with zero terminator
 STATIC CHAR8 gBootArgsVal[] = "-no_compat_check";
@@ -82,65 +69,50 @@ STATIC CHAR8 gBootArgsVal[] = "-no_compat_check";
 // one char, no zero terminator
 STATIC CHAR8 gStartupMuteVal[] = { '1' };
 
-// equal to max size of toggled var
-STATIC CHAR8 gGetVarBuffer[] = "-no_compat_check";
-
-STATIC UINT32 gFlags = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE;
-
-void ToggleOrSetVar(IN CHAR16 *varName, IN CHAR8 *preferredValue, UINTN actualSize, BOOLEAN toggle)
+VOID
+DisplayAppleVar(
+  IN CHAR16 *varName,
+  BOOLEAN isString)
 {
-	UINT32 attr;
-
-	UINTN data_size = actualSize;
-	if (!EFI_ERROR(gRT->GetVariable(varName, &appleGUID, &attr, &data_size, gGetVarBuffer)) &&
-		data_size == actualSize &&
-		CompareMem(preferredValue, gGetVarBuffer, actualSize) == 0)
-	{
-		if (toggle)
-		{
-			gRT->SetVariable(varName, &appleGUID, gFlags, 0, NULL);
-			//Print(L"Deleting %s\n", varName);
-		}
-		else
-		{
-			//Print(L"Not setting %s, already set\n", varName);
-		}
-	}
-	else
-	{
-		gRT->SetVariable(varName, &appleGUID, gFlags, actualSize, preferredValue);
-		//Print(L"Setting %s\n", varName);
-	}
+	DisplayNvramValueWithoutGuid(&gEfiAppleGuid, varName, isString);
 }
 
-void ToggleVar(IN CHAR16 *varName, IN CHAR8 *preferredValue, UINTN actualSize)
+EFI_STATUS
+ToggleAppleVar(
+  IN CHAR16 *Name,
+  IN CHAR8 *PreferredValue,
+  UINTN PreferredSize)
 {
-	ToggleOrSetVar(varName, preferredValue, actualSize, TRUE);
+	return ToggleOrSetVar(Name, &gEfiAppleGuid, PreferredValue, PreferredSize, TRUE);
 }
 
-void SetVar(IN CHAR16 *varName, IN CHAR8 *preferredValue, UINTN actualSize)
+EFI_STATUS
+SetAppleVar(
+  IN CHAR16 *Name,
+  IN CHAR8 *PreferredValue,
+  UINTN PreferredSize)
 {
-	ToggleOrSetVar(varName, preferredValue, actualSize, FALSE);
+	return ToggleOrSetVar(Name, &gEfiAppleGuid, PreferredValue, PreferredSize, FALSE);
 }
 
 void ToggleBootArgs()
 {
-	ToggleVar(L"boot-args", gBootArgsVal, sizeof(gBootArgsVal));
+	ToggleAppleVar(L"boot-args", gBootArgsVal, sizeof(gBootArgsVal));
 }
 
 void SetBootArgs()
 {
-	SetVar(L"boot-args", gBootArgsVal, sizeof(gBootArgsVal));
+	SetAppleVar(L"boot-args", gBootArgsVal, sizeof(gBootArgsVal));
 }
 
 void ToggleCsrActiveConfig(UINT32 value)
 {
-	ToggleVar(L"csr-active-config", (CHAR8 *)&value, sizeof(value));
+	ToggleAppleVar(L"csr-active-config", (CHAR8 *)&value, sizeof(value));
 }
 
 void ToggleStartupMute()
 {
-	ToggleVar(L"StartupMute", gStartupMuteVal, sizeof(gStartupMuteVal));
+	ToggleAppleVar(L"StartupMute", gStartupMuteVal, sizeof(gStartupMuteVal));
 }
 
 EFI_STATUS
@@ -155,18 +127,18 @@ UefiMain(
 	for (;;)
 	{
 		// inter alia, we want to clear the other stuff on the hidden text screen, before switching to viewing the text...
-		gST->ConOut->ClearScreen(gST->ConOut);
+		if (mClearScreen) gST->ConOut->ClearScreen(gST->ConOut);
 
 		SetColour(EFI_LIGHTMAGENTA);
 		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.2.2\n");
+		Print(L"0.2.4\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
 #if 1
-		DisplayAppleNvramValue(L"boot-args", TRUE);
-		DisplayAppleNvramValue(L"csr-active-config", FALSE);
-		DisplayAppleNvramValue(L"StartupMute", TRUE);
+		DisplayAppleVar(L"boot-args", TRUE);
+		DisplayAppleVar(L"csr-active-config", FALSE);
+		DisplayAppleVar(L"StartupMute", TRUE);
 #endif
 		if (showOCVersion)
 		{
@@ -191,6 +163,13 @@ UefiMain(
 				ToggleBootArgs();
 				break;
 			}
+#if 0
+			else if (c == 'z')
+			{
+				SetBootArgs();
+				break;
+			}
+#endif
 			else if (c == 'c')
 			{
 				ToggleCsrActiveConfig(0x77);

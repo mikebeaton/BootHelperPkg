@@ -25,7 +25,9 @@
 //
 // Local includes
 //
+#include "BootHelper.h"
 #include "EzKb.h"
+#include "Utils.h"
 
 #define EFI_QEMU_C16_GUID_1 \
   { 0x158DEF5A, 0xF656, 0x419C, {0xB0, 0x27, 0x7A, 0x31, 0x92, 0xC0, 0x79, 0xD2} }
@@ -291,4 +293,56 @@ ListVars ()
 			}
 		}
 	}
+}
+
+STATIC UINT32 gFlags = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE;
+
+EFI_STATUS
+ToggleOrSetVar(
+  IN CHAR16 *Name,
+  IN EFI_GUID *Guid,
+  IN CHAR8 *PreferredValue,
+  UINTN PreferredSize,
+  BOOLEAN Toggle)
+{
+	EFI_STATUS Status;
+	UINT32 Attr;
+	UINTN DataSize;
+	VOID *Data;
+
+	Status = GetNvramValue (Name, Guid, &Attr, &DataSize, &Data);
+
+	if (Status != EFI_NOT_FOUND && EFI_ERROR (Status)) {
+		return Status;
+	}
+
+	if (!mInteractive) SetColour(EFI_LIGHTGREEN);
+
+	if (Status != EFI_NOT_FOUND &&
+	    DataSize == PreferredSize &&
+		CompareMem (PreferredValue, Data, DataSize) == 0)
+	{
+		if (Toggle)
+		{
+			gRT->SetVariable (Name, Guid, gFlags, 0, NULL);
+			if (!mInteractive) Print(L"Deleting %s\n", Name);
+		}
+		else
+		{
+			if (!mInteractive) Print(L"Not setting %s, already set\n", Name);
+		}
+	}
+	else
+	{
+		gRT->SetVariable (Name, Guid, gFlags, PreferredSize, PreferredValue);
+		if (!mInteractive) Print(L"Setting %s\n", Name);
+	}
+
+	if (Status != EFI_NOT_FOUND) {
+		FreePool (Data);
+	}
+
+	if (!mInteractive) SetColour(EFI_WHITE);
+
+	return EFI_SUCCESS;
 }
