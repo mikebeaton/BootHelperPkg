@@ -27,15 +27,15 @@ GetNvramValue (
 // Display an NVRAM value, allocating and freeing the buffer needed for the data (always display GUID)
 EFI_STATUS
 DisplayNvramValue (
-  IN EFI_GUID *Guid,
   IN CHAR16 *Name,
+  IN EFI_GUID *Guid,
   BOOLEAN isString);
 
 // Display an NVRAM value, allocating and freeing the buffer needed for the data (don't display GUID)
 EFI_STATUS
 DisplayNvramValueWithoutGuid (
-  IN EFI_GUID *Guid,
   IN CHAR16 *Name,
+  IN EFI_GUID *Guid,
   BOOLEAN isString);
 
 // List all NVRAM vars to conout, with some keyboard control

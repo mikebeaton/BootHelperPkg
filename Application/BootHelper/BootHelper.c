@@ -71,10 +71,10 @@ STATIC CHAR8 gStartupMuteVal[] = { '1' };
 
 VOID
 DisplayAppleVar(
-  IN CHAR16 *varName,
+  IN CHAR16 *Name,
   BOOLEAN isString)
 {
-	DisplayNvramValueWithoutGuid(&gEfiAppleGuid, varName, isString);
+	DisplayNvramValueWithoutGuid(Name, &gEfiAppleGuid, isString);
 }
 
 EFI_STATUS
@@ -131,7 +131,7 @@ UefiMain(
 
 		SetColour(EFI_LIGHTMAGENTA);
 		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.2.4\n");
+		Print(L"0.2.5\n");
 		SetColour(EFI_WHITE);
 		Print(L"\n");
 
@@ -142,7 +142,7 @@ UefiMain(
 #endif
 		if (showOCVersion)
 		{
-			DisplayNvramValueWithoutGuid(&gEfiOpenCoreGuid, L"opencore-version", TRUE);
+			DisplayNvramValueWithoutGuid(L"opencore-version", &gEfiOpenCoreGuid, TRUE);
 		}
 
 		SetColour(EFI_LIGHTRED);

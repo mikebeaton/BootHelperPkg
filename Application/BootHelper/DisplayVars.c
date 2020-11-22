@@ -156,8 +156,8 @@ GetNvramValue (
 
 EFI_STATUS
 DisplayNvramValueOptionalGuid (
-  IN EFI_GUID *Guid,
   IN CHAR16 *Name,
+  IN EFI_GUID *Guid,
   BOOLEAN isString,
   BOOLEAN displayGuid)
 {
@@ -198,20 +198,20 @@ DisplayNvramValueOptionalGuid (
 
 EFI_STATUS
 DisplayNvramValue (
-  IN EFI_GUID *Guid,
   IN CHAR16 *Name,
+  IN EFI_GUID *Guid,
   BOOLEAN isString)
 {
-	return DisplayNvramValueOptionalGuid (Guid, Name, isString, TRUE);
+	return DisplayNvramValueOptionalGuid (Name, Guid, isString, TRUE);
 }
 
 EFI_STATUS
 DisplayNvramValueWithoutGuid (
-  IN EFI_GUID *Guid,
   IN CHAR16 *Name,
+  IN EFI_GUID *Guid,
   BOOLEAN isString)
 {
-	return DisplayNvramValueOptionalGuid (Guid, Name, isString, FALSE);
+	return DisplayNvramValueOptionalGuid (Name, Guid, isString, FALSE);
 }
 
 EFI_STATUS
@@ -266,7 +266,7 @@ ListVars ()
 		//
 		// Display var
 		//
-        Status = DisplayNvramValue (&Guid, Name, TRUE);
+        Status = DisplayNvramValue (Name, &Guid, TRUE);
 
 		//
 		// Not expecting error here but exit if there is one
