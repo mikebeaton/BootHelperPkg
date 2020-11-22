@@ -33,8 +33,8 @@
   BootHelper.c
   EzKb.h
   EzKb.c
-  DisplayVar.h
-  DisplayVar.c
+  DisplayVars.h
+  DisplayVars.c
 
 [Packages]
   MdePkg/MdePkg.dec

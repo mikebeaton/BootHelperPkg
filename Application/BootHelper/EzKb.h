@@ -15,12 +15,6 @@
 #include <Uefi.h>
 #include <Library/UefiLib.h>
 
-//
-// Boot and Runtime Services
-//
-#include <Library/UefiBootServicesTableLib.h>
-#include <Library/UefiRuntimeServicesTableLib.h>
-
 // ReadKeyStroke returns EFI_NOT_READY if no key available
 // ReadKeyStroke returns EFI_SUCCESS if a key is available
 // It will not wait for a key to be available.
