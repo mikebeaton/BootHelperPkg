@@ -62,7 +62,7 @@ DisplayVarC8 (const CHAR8* in, UINTN nChars, BOOLEAN isString)
 	if (nChars == 8) {
 		Print (L" 0x%016lx", ((UINT64*)in)[0]);
 	} else if (nChars == 4) {
-		Print (L" 0x%016lx", ((UINT32*)in)[0]);
+		Print (L" 0x%08x", ((UINT32*)in)[0]);
 	} else if (nChars == 2) {
 		Print (L" 0x%04x", ((UINT16*)in)[0]);
 	} else if (nChars == 1) {
