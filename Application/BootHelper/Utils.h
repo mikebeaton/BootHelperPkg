@@ -15,7 +15,9 @@
 #include <Uefi.h>
 #include <Library/UefiLib.h>
 
-EFI_STATUS SetColour(UINTN Attribute);
+EFI_STATUS SetColour(
+  UINTN Attribute
+  );
 
 void Shutdown();
 

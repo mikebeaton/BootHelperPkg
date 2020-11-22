@@ -19,10 +19,14 @@
 // ReadKeyStroke returns EFI_SUCCESS if a key is available
 // It will not wait for a key to be available.
 EFI_STATUS
-kbhit (EFI_INPUT_KEY *Key);
+kbhit (
+  EFI_INPUT_KEY *Key
+  );
 
 // Wait for a key to be available, then read the key using ReadKeyStrokes
 EFI_STATUS
-getkeystroke (EFI_INPUT_KEY *Key);
+getkeystroke (
+  EFI_INPUT_KEY *Key
+  );
 
 #endif

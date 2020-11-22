@@ -49,14 +49,14 @@ BOOLEAN mClearScreen = FALSE;
 EFI_STATUS
 EFIAPI
 UefiUnload (
-    IN EFI_HANDLE ImageHandle
-    )
+  IN EFI_HANDLE ImageHandle
+  )
 {
-    // 
-    // This code should be compiled out and never called 
-    // 
-    ASSERT(FALSE);
-    return EFI_SUCCESS;
+  // 
+  // This code should be compiled out and never called 
+  // 
+  ASSERT(FALSE);
+  return EFI_SUCCESS;
 }
 #endif
 
@@ -77,47 +77,50 @@ STATIC CHAR8 gStartupMuteVal[] = { '1' };
 VOID
 DisplayAppleVar(
   IN CHAR16 *Name,
-  BOOLEAN isString)
+  BOOLEAN isString
+  )
 {
-	DisplayNvramValueWithoutGuid(Name, &gEfiAppleGuid, isString);
+  DisplayNvramValueWithoutGuid(Name, &gEfiAppleGuid, isString);
 }
 
 EFI_STATUS
 ToggleAppleVar(
   IN CHAR16 *Name,
   IN CHAR8 *PreferredValue,
-  UINTN PreferredSize)
+  UINTN PreferredSize
+  )
 {
-	return ToggleOrSetVar(Name, &gEfiAppleGuid, PreferredValue, PreferredSize, TRUE);
+  return ToggleOrSetVar(Name, &gEfiAppleGuid, PreferredValue, PreferredSize, TRUE);
 }
 
 EFI_STATUS
 SetAppleVar(
   IN CHAR16 *Name,
   IN CHAR8 *PreferredValue,
-  UINTN PreferredSize)
+  UINTN PreferredSize
+  )
 {
-	return ToggleOrSetVar(Name, &gEfiAppleGuid, PreferredValue, PreferredSize, FALSE);
+  return ToggleOrSetVar(Name, &gEfiAppleGuid, PreferredValue, PreferredSize, FALSE);
 }
 
 void ToggleBootArgs()
 {
-	ToggleAppleVar(L"boot-args", gBootArgsVal, sizeof(gBootArgsVal));
+  ToggleAppleVar(L"boot-args", gBootArgsVal, sizeof(gBootArgsVal));
 }
 
 void SetBootArgs()
 {
-	SetAppleVar(L"boot-args", gBootArgsVal, sizeof(gBootArgsVal));
+  SetAppleVar(L"boot-args", gBootArgsVal, sizeof(gBootArgsVal));
 }
 
 void ToggleCsrActiveConfig(UINT32 value)
 {
-	ToggleAppleVar(L"csr-active-config", (CHAR8 *)&value, sizeof(value));
+  ToggleAppleVar(L"csr-active-config", (CHAR8 *)&value, sizeof(value));
 }
 
 void ToggleStartupMute()
 {
-	ToggleAppleVar(L"StartupMute", gStartupMuteVal, sizeof(gStartupMuteVal));
+  ToggleAppleVar(L"StartupMute", gStartupMuteVal, sizeof(gStartupMuteVal));
 }
 
 EFI_STATUS
@@ -126,111 +129,89 @@ BhMain (
   EFI_SIMPLE_FILE_SYSTEM_PROTOCOL   *FileSystem
   )
 {
-	BOOLEAN showOCVersion = FALSE;
+  BOOLEAN showOCVersion = FALSE;
 
-	for (;;)
-	{
-		// inter alia, we want to clear the other stuff on the hidden text screen, before switching to viewing the text...
-		if (mClearScreen) gST->ConOut->ClearScreen(gST->ConOut);
+  for (;;)
+  {
+    // inter alia, we want to clear the other stuff on the hidden text screen, before switching to viewing the text...
+    if (mClearScreen) gST->ConOut->ClearScreen(gST->ConOut);
 
-		SetColour(EFI_LIGHTMAGENTA);
-		Print(L"macOS NVRAM Boot Helper\n");
-		Print(L"0.2.6\n");
-		SetColour(EFI_WHITE);
-		Print(L"\n");
+    SetColour(EFI_LIGHTMAGENTA);
+    Print(L"macOS NVRAM Boot Helper\n");
+    Print(L"0.2.6 2cr\n");
+    SetColour(EFI_WHITE);
+    Print(L"\n");
 
 #if 1
-		DisplayAppleVar(L"boot-args", TRUE);
-		DisplayAppleVar(L"csr-active-config", FALSE);
-		DisplayAppleVar(L"StartupMute", TRUE);
+    DisplayAppleVar(L"boot-args", TRUE);
+    DisplayAppleVar(L"csr-active-config", FALSE);
+    DisplayAppleVar(L"StartupMute", TRUE);
 #endif
-		if (showOCVersion)
-		{
-			DisplayNvramValueWithoutGuid(L"opencore-version", &gEfiOpenCoreGuid, TRUE);
-		}
+    if (showOCVersion)
+    {
+      DisplayNvramValueWithoutGuid(L"opencore-version", &gEfiOpenCoreGuid, TRUE);
+    }
 
-		SetColour(EFI_LIGHTRED);
-		Print(L"\nboot-[A]rgs; [B]ig Sur; [C]atalina; Startup[M]ute\n[R]eboot; [S]hutdown; [Q]uit; E[x]it; [L]ist\n");
-		SetColour(EFI_WHITE);
+    SetColour(EFI_LIGHTRED);
+    Print(L"\nboot-[A]rgs; [B]ig Sur; [C]atalina; Startup[M]ute\n[R]eboot; [S]hutdown; [Q]uit; E[x]it; [L]ist\n");
+    SetColour(EFI_WHITE);
 
-		EFI_INPUT_KEY key;
+    EFI_INPUT_KEY key;
 
-		for (;;)
-		{
-			getkeystroke(&key);
+    for (;;)
+    {
+      getkeystroke(&key);
 
-			CHAR16 c = key.UnicodeChar;
-			if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a';
+      CHAR16 c = key.UnicodeChar;
+      if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a';
 
-			if (c == 'a')
-			{
-				ToggleBootArgs();
-				break;
-			}
+      if (c == 'a') {
+        ToggleBootArgs();
+        break;
 #if 0
-			else if (c == 'z')
-			{
-				SetBootArgs();
-				break;
-			}
+      } else if (c == 'z') {
+        SetBootArgs();
+        break;
 #endif
-			else if (c == 'c')
-			{
-				ToggleCsrActiveConfig(0x77);
-				break;
-			}
-			else if (c == 'b')
-			{
-				ToggleCsrActiveConfig(0x7f);
-				break;
-			}
-			else if (c == 'm')
-			{
-				ToggleStartupMute();
-				break;
-			}
-			else if (c == 'o')
-			{
-				showOCVersion = !showOCVersion;
-				break;
-			}
-			else if (c == 'r')
-			{
-				Print(L"\nRebooting...");
-				Reboot();
-				break;
-			}
-			else if (c == 's')
-			{
-				Print(L"\nShutting down...");
-				Shutdown();
-				break;
-			}
-			else if (c == 'l')
-			{
-				Print(L"Listing... (any key for next or [Q]uit; E[x]it; List [a]ll remaining)\n");
-				EFI_STATUS Status;
-				Status = ListVars();
-				if (Status == EFI_NOT_FOUND) {
-					Print(L"Listed.\n");
-				} else if (Status == EFI_SUCCESS) {
-					Print(L"Quit.\n");
-				} else {
-					Print(L"Error!\n");
-				}
-				Print(L"Any Key...\n");
-				getkeystroke(&key);
-				break;
-			}
-			else if (c == 'x' || c == 'q')
-			{
-				Print(L"\nExiting...\n");
-				return EFI_SUCCESS;
-			}
-		}
-	}
+	  } else if (c == 'c') {
+        ToggleCsrActiveConfig(0x77);
+        break;
+      } else if (c == 'b') {
+        ToggleCsrActiveConfig(0x7f);
+        break;
+      } else if (c == 'm') {
+        ToggleStartupMute();
+        break;
+      } else if (c == 'o') {
+        showOCVersion = !showOCVersion;
+        break;
+      } else if (c == 'r') {
+        Reboot();
+      } else if (c == 's') {
+        Shutdown();
+      } else if (c == 'l') {
+        Print (L"Listing... (any key for next or [Q]uit; E[x]it; List [a]ll remaining)\n");
+        EFI_STATUS Status;
+        Status = ListVars();
+        if (Status == EFI_NOT_FOUND) {
+          Print( L"Listed.\n");
+        } else if (Status == EFI_SUCCESS) {
+          Print (L"Quit.\n");
+        } else {
+          Print (L"Error: %r!\n", Status);
+        }
+        Print (L"Any Key...\n");
+        getkeystroke (&key);
+        break;
+      } else if (c == 'x' || c == 'q') {
+        Print (L"\nExiting...\n");
+        return EFI_SUCCESS;
+      }
+    }
+  }
 }
 
+#if 0
 VOID
 DebugDebug (
   IN EFI_HANDLE        ImageHandle,
@@ -256,6 +237,7 @@ DebugDebug (
   Print (L"Debug not enabled!\n");
 #endif
 }
+#endif
 
 EFI_STATUS
 EFIAPI

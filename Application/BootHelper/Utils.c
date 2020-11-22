@@ -18,17 +18,23 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeServicesTableLib.h>
 
-EFI_STATUS SetColour(UINTN Attribute)
+EFI_STATUS SetColour(
+  UINTN Attribute
+  )
 {
-	return gST->ConOut->SetAttribute(gST->ConOut, Attribute);
+  return gST->ConOut->SetAttribute(gST->ConOut, Attribute);
 }
 
 void Shutdown()
 {
-	gRT->ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, NULL);
+  Print(L"\nShutting down...\n");
+  gRT->ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, NULL);
+  CpuDeadLoop();
 }
 
 void Reboot()
 {
-	gRT->ResetSystem(EfiResetWarm, EFI_SUCCESS, 0, NULL);
+  Print(L"\nRebooting...\n");
+  gRT->ResetSystem(EfiResetWarm, EFI_SUCCESS, 0, NULL);
+  CpuDeadLoop();
 }
