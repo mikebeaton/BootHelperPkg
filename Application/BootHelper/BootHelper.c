@@ -114,6 +114,7 @@ void ToggleStartupMute()
   ToggleAppleVar(L"StartupMute", gStartupMuteVal, sizeof(gStartupMuteVal));
 }
 
+STATIC
 EFI_STATUS
 EFIAPI
 BhMain ()
@@ -263,6 +264,7 @@ BhConfigInit (
 //
 // OpenCore.c - OcMain
 //
+STATIC
 EFI_STATUS
 EFIAPI
 BhConfigAndMain (
@@ -288,6 +290,7 @@ BhConfigAndMain (
   return Status;
 }
 
+STATIC
 EFI_STATUS
 EFIAPI
 BhBootstrap (
