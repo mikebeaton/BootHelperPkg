@@ -1,13 +1,10 @@
 //
-// Basic UEFI Libraries
+// UEFI Libraries
 //
 #include <Uefi.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/BaseMemoryLib.h>
-
-//
-// Boot and Runtime Services
-//
+#include <Library/DevicePathLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeServicesTableLib.h>
 
@@ -16,6 +13,7 @@
 //
 #include <Library/OcConfigurationLib.h>
 #include <Library/OcDebugLogLib.h>
+#include <Library/OcDevicePathLib.h>
 #include <Library/OcFileLib.h>
 #include <Library/OcStorageLib.h>
 
@@ -128,7 +126,7 @@ BhMain ()
 
     SetColour(EFI_LIGHTMAGENTA);
     Print(L"macOS NVRAM Boot Helper\n");
-    Print(L"0.2.6 store\n");
+    Print(L"0.2.7 oc\n");
     SetColour(EFI_WHITE);
     Print(L"\n");
 
@@ -200,6 +198,186 @@ BhMain ()
   }
 }
 
+STATIC
+OC_GLOBAL_CONFIG
+mOpenCoreConfiguration;
+
+STATIC
+OC_STORAGE_CONTEXT
+mOpenCoreStorage;
+
+STATIC
+OC_RSA_PUBLIC_KEY *
+mOpenCoreVaultKey;
+
+STATIC
+EFI_HANDLE
+mStorageHandle;
+
+STATIC
+EFI_DEVICE_PATH_PROTOCOL *
+mStoragePath;
+
+STATIC
+CHAR16 *
+mStorageRoot;
+
+//
+// OpenCoreMisc.c - OcMiscEarlyInit
+//
+EFI_STATUS
+BhConfigInit (
+  IN  OC_STORAGE_CONTEXT *Storage,
+  OUT OC_GLOBAL_CONFIG   *Config,
+  IN  OC_RSA_PUBLIC_KEY  *VaultKey  OPTIONAL
+  )
+{
+  EFI_STATUS                Status;
+  CHAR8                     *ConfigData;
+  UINT32                    ConfigDataSize;
+
+  ConfigData = OcStorageReadFileUnicode (
+    Storage,
+    BOOT_HELPER_CONFIG_PATH,
+    &ConfigDataSize
+    );
+
+  if (ConfigData != NULL) {
+    DEBUG ((DEBUG_INFO, "BH: Loaded configuration of %u bytes\n", ConfigDataSize));
+
+    Status = OcConfigurationInit (Config, ConfigData, ConfigDataSize);
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "BH: Failed to parse configuration!\n"));
+      return EFI_UNSUPPORTED;
+    }
+
+    FreePool (ConfigData);
+  } else {
+    DEBUG ((DEBUG_ERROR, "BH: Failed to load configuration!\n"));
+    return EFI_UNSUPPORTED;
+  }
+
+  return EFI_SUCCESS;
+}
+
+//
+// OpenCore.c - OcMain
+//
+EFI_STATUS
+EFIAPI
+BhConfigAndMain (
+  IN OC_STORAGE_CONTEXT        *Storage,
+  IN EFI_DEVICE_PATH_PROTOCOL  *LoadPath OPTIONAL
+  )
+{
+  EFI_STATUS                Status;
+
+  DEBUG ((DEBUG_INFO, "BH: BhConfigAndMain calling BhConfigInit...\n"));
+  Status = BhConfigInit (
+    Storage,
+    &mOpenCoreConfiguration,
+    mOpenCoreVaultKey
+    );
+
+  if (EFI_ERROR (Status)) {
+    return Status;
+  }
+
+  Status = BhMain();
+
+  return Status;
+}
+
+EFI_STATUS
+EFIAPI
+BhBootstrap (
+  IN EFI_SIMPLE_FILE_SYSTEM_PROTOCOL  *FileSystem,
+  IN EFI_DEVICE_PATH_PROTOCOL         *LoadPath OPTIONAL
+  )
+{
+  EFI_STATUS                Status;
+  EFI_DEVICE_PATH_PROTOCOL  *RemainingPath;
+  UINTN                     StoragePathSize;
+
+  DEBUG ((DEBUG_INFO, "BH: BhBootstrap\n"));
+
+  mOpenCoreVaultKey = NULL;
+
+  //
+  // Calculate root path (never freed).
+  //
+  RemainingPath = NULL;
+  if (LoadPath != NULL) {
+    ASSERT (mStorageRoot == NULL);
+    mStorageRoot = OcCopyDevicePathFullName (LoadPath, &RemainingPath);
+    //
+    // Skipping this or later failing to call UnicodeGetParentDirectory means
+    // we got valid path to the root of the partition. This happens when
+    // OpenCore.efi was loaded from e.g. firmware and then bootstrapped
+    // on a different partition.
+    //
+    if (mStorageRoot != NULL) {
+      if (UnicodeGetParentDirectory (mStorageRoot)) {
+        //
+        // This means we got valid path to ourselves.
+        //
+        DEBUG ((DEBUG_INFO, "BH: Got launch root path %s\n", mStorageRoot));
+      } else {
+        FreePool (mStorageRoot);
+        mStorageRoot = NULL;
+      }
+    }
+  }
+
+  if (mStorageRoot == NULL) {
+    mStorageRoot = BOOT_HELPER_ROOT_PATH;
+    RemainingPath = NULL;
+    DEBUG ((DEBUG_INFO, "BH: Got default root path %s\n", mStorageRoot));
+  }
+
+  //
+  // Calculate storage path.
+  //
+  if (RemainingPath != NULL) {
+    StoragePathSize = (UINTN) RemainingPath - (UINTN) LoadPath;
+    mStoragePath = AllocatePool (StoragePathSize + END_DEVICE_PATH_LENGTH);
+    if (mStoragePath != NULL) {
+      CopyMem (mStoragePath, LoadPath, StoragePathSize);
+      SetDevicePathEndNode ((UINT8 *) mStoragePath + StoragePathSize);
+    }
+  } else {
+    mStoragePath = NULL;
+  }
+
+  RemainingPath = LoadPath;
+  gBS->LocateDevicePath (
+    &gEfiSimpleFileSystemProtocolGuid,
+    &RemainingPath,
+    &mStorageHandle
+    );
+
+  Status = OcStorageInitFromFs (
+    &mOpenCoreStorage,
+    FileSystem,
+    mStorageHandle,
+    mStoragePath,
+    mStorageRoot,
+    mOpenCoreVaultKey
+    );
+
+  if (!EFI_ERROR (Status)) {
+    Status = BhConfigAndMain (&mOpenCoreStorage, LoadPath);
+    OcStorageFree (&mOpenCoreStorage);
+  } else {
+    DEBUG ((DEBUG_ERROR, "BH: Failed to open root FS - %r!\n", Status));
+    if (Status == EFI_SECURITY_VIOLATION) {
+      CpuDeadLoop (); ///< Should not return.
+    }
+  }
+
+  return Status;
+}
+
 #if 0
 VOID
 DebugDebug (
@@ -228,6 +406,9 @@ DebugDebug (
 }
 #endif
 
+//
+// OpenCore.c - UefiMain
+//
 EFI_STATUS
 EFIAPI
 UefiMain (
@@ -240,6 +421,7 @@ UefiMain (
   EFI_STATUS                        Status;
   EFI_LOADED_IMAGE_PROTOCOL         *LoadedImage;
   EFI_SIMPLE_FILE_SYSTEM_PROTOCOL   *FileSystem;
+  EFI_DEVICE_PATH_PROTOCOL          *AbsPath;
 
   DEBUG ((DEBUG_INFO, "BH: Starting BootHelper...\n"));
 
@@ -266,73 +448,21 @@ UefiMain (
     LoadedImage->FilePath
     );
 
-  if (FileSystem == NULL) {
-    DEBUG ((DEBUG_ERROR, "BH: Failed to obtain own file system\n"));
-    CpuDeadLoop();
-    return EFI_NOT_FOUND;
-  }
+  AbsPath = AbsoluteDevicePath (LoadedImage->DeviceHandle, LoadedImage->FilePath);
 
-  OC_STORAGE_CONTEXT OpenCoreStorage;
-
-  Status = OcStorageInitFromFs (
-    &OpenCoreStorage,
-    FileSystem,
-    BOOT_HELPER_ROOT_PATH,
-    NULL //mOpenCoreVaultKey
-    );
-
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "BH: Failed to open root FS - %r\n", Status));
-    CpuDeadLoop();
-    return Status;
-  }
-
-  CHAR8                     *ConfigData;
-  UINT32                    ConfigDataSize;
-  OC_GLOBAL_CONFIG          Config;
-
-  ConfigData = OcStorageReadFileUnicode (
-    &OpenCoreStorage,
-    BOOT_HELPER_CONFIG_PATH,
-    &ConfigDataSize
-    );
-
-  if (ConfigData != NULL) {
-    DEBUG ((DEBUG_INFO, "BH: Loaded configuration of %u bytes\n", ConfigDataSize));
-
-    Status = OcConfigurationInit (
-      &Config,
-      ConfigData,
-      ConfigDataSize
-      );
-
-    if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "BH: Failed to parse configuration!\n"));
-      CpuDeadLoop ();
-      return EFI_UNSUPPORTED; ///< Should be unreachable.
-    }
-
-    FreePool (ConfigData);
+  //
+  // Return success in either case to let rerun work afterwards.
+  //
+  if (FileSystem != NULL) {
+    Status = BhBootstrap (FileSystem, AbsPath);
   } else {
-    DEBUG ((DEBUG_ERROR, "BH: Failed to load configuration!\n"));
-    CpuDeadLoop ();
-    return EFI_UNSUPPORTED; ///< Should be unreachable.
+    DEBUG ((DEBUG_ERROR, "BH: Failed to locate file system\n"));
+    Status = EFI_NOT_FOUND;
   }
 
-  CONST CHAR8 *AsciiPicker;
-  AsciiPicker = OC_BLOB_GET (&Config.Misc.Boot.PickerMode);
-  Print (
-    L"BH: I think we've loaded OpenCore config from %s/%s; Misc.Boot.PickerMode=\"%a\"\n",
-    BOOT_HELPER_ROOT_PATH,
-    BOOT_HELPER_CONFIG_PATH,
-    AsciiPicker
-    );
-
-  Status = BhMain ();
-
-  OcConfigurationFree (&Config);
-
-  OcStorageFree (&OpenCoreStorage);
+  if (AbsPath != NULL) {
+    FreePool (AbsPath);
+  }
 
   if (mBhOnExit == BhOnExitReboot) {
     Print(L"\nRebooting...\n");
