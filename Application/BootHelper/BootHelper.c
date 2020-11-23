@@ -32,9 +32,10 @@
 #include "DisplayVars.h"
 #include "Utils.h"
 
-BOOLEAN mInteractive = TRUE;
-BOOLEAN mClearScreen = FALSE;
-BH_ON_EXIT mBhOnExit = BhOnExitExit;
+BOOLEAN mInteractive            = TRUE;
+BOOLEAN mClearScreen            = TRUE;
+BOOLEAN mKeyPromptOnExit        = FALSE;
+BH_ON_EXIT mBhOnExit            = BhOnExitExit;
 
 #if false
 EFI_STATUS
@@ -449,9 +450,11 @@ UefiMain (
 
   Print (L"\nExiting w/ %r...\n", Status);
 
-  Print (L"\nAny key...\n");
-  EFI_INPUT_KEY key;
-  getkeystroke(&key);
+  if (mKeyPromptOnExit) {
+    Print (L"\nAny key...\n");
+    EFI_INPUT_KEY key;
+    getkeystroke(&key);
+  }
 
   return Status;
 }
