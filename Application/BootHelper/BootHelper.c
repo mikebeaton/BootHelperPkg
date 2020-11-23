@@ -381,34 +381,6 @@ BhBootstrap (
   return Status;
 }
 
-#if 0
-VOID
-DebugDebug (
-  IN EFI_HANDLE        ImageHandle,
-  IN EFI_SYSTEM_TABLE  *SystemTable
-  )
-{
-  EFI_STATUS Status;
-
-  OC_LOG_PROTOCOL *mInternalOcLog = NULL;
-  Status = gBS->LocateProtocol (
-    &gOcLogProtocolGuid,
-    NULL,
-    (VOID **) &mInternalOcLog
-  );
-  Print (L"Located OcLogProtocol=%d (EFI_NOT_FOUND=%d)\n", Status, EFI_NOT_FOUND);
-
-  Print (L"DebugPrintEnabled=%d\n", DebugPrintEnabled());
-  Print (L"DebugPrintLevelEnabled(DEBUG_INFO)=%d\n", DebugPrintLevelEnabled(DEBUG_INFO));
-
-#if !defined(MDEPKG_NDEBUG)
-  Print (L"Debug seems enabled\n");
-#else
-  Print (L"Debug not enabled!\n");
-#endif
-}
-#endif
-
 //
 // OpenCore.c - UefiMain
 //
@@ -419,8 +391,6 @@ UefiMain (
   IN EFI_SYSTEM_TABLE  *SystemTable
   )
 {
-  //DebugDebug (ImageHandle, SystemTable);
-
   EFI_STATUS                        Status;
   EFI_LOADED_IMAGE_PROTOCOL         *LoadedImage;
   EFI_SIMPLE_FILE_SYSTEM_PROTOCOL   *FileSystem;
