@@ -27,14 +27,10 @@ EFI_STATUS SetColour(
 
 void Shutdown()
 {
-  Print(L"\nShutting down...\n");
   gRT->ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, NULL);
-  CpuDeadLoop();
 }
 
 void Reboot()
 {
-  Print(L"\nRebooting...\n");
   gRT->ResetSystem(EfiResetWarm, EFI_SUCCESS, 0, NULL);
-  CpuDeadLoop();
 }

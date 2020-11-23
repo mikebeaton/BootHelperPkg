@@ -14,8 +14,10 @@
 //
 // OC Libraries
 //
+#include <Library/OcConfigurationLib.h>
 #include <Library/OcDebugLogLib.h>
 #include <Library/OcFileLib.h>
+#include <Library/OcStorageLib.h>
 
 //
 // Shell Library
@@ -34,16 +36,7 @@
 
 BOOLEAN mInteractive = TRUE;
 BOOLEAN mClearScreen = FALSE;
-
-//
-// We run on any UEFI Specification
-//
-//extern CONST UINT32 _gUefiDriverRevision = 0;
-
-//
-// Our name
-//
-//CHAR8 *gEfiCallerBaseName = "BootHelper";
+BH_ON_EXIT mBhOnExit = BhOnExitExit;
 
 #if false
 EFI_STATUS
@@ -125,20 +118,17 @@ void ToggleStartupMute()
 
 EFI_STATUS
 EFIAPI
-BhMain (
-  EFI_SIMPLE_FILE_SYSTEM_PROTOCOL   *FileSystem
-  )
+BhMain ()
 {
   BOOLEAN showOCVersion = FALSE;
 
-  for (;;)
-  {
+  while (TRUE) {
     // inter alia, we want to clear the other stuff on the hidden text screen, before switching to viewing the text...
     if (mClearScreen) gST->ConOut->ClearScreen(gST->ConOut);
 
     SetColour(EFI_LIGHTMAGENTA);
     Print(L"macOS NVRAM Boot Helper\n");
-    Print(L"0.2.6 2cr\n");
+    Print(L"0.2.6 store\n");
     SetColour(EFI_WHITE);
     Print(L"\n");
 
@@ -147,8 +137,7 @@ BhMain (
     DisplayAppleVar(L"csr-active-config", FALSE);
     DisplayAppleVar(L"StartupMute", TRUE);
 #endif
-    if (showOCVersion)
-    {
+    if (showOCVersion) {
       DisplayNvramValueWithoutGuid(L"opencore-version", &gEfiOpenCoreGuid, TRUE);
     }
 
@@ -158,8 +147,7 @@ BhMain (
 
     EFI_INPUT_KEY key;
 
-    for (;;)
-    {
+    while (TRUE) {
       getkeystroke(&key);
 
       CHAR16 c = key.UnicodeChar;
@@ -186,9 +174,11 @@ BhMain (
         showOCVersion = !showOCVersion;
         break;
       } else if (c == 'r') {
-        Reboot();
+        mBhOnExit = BhOnExitReboot;
+        return EFI_SUCCESS;
       } else if (c == 's') {
-        Shutdown();
+        mBhOnExit = BhOnExitShutdown;
+        return EFI_SUCCESS;
       } else if (c == 'l') {
         Print (L"Listing... (any key for next or [Q]uit; E[x]it; List [a]ll remaining)\n");
         EFI_STATUS Status;
@@ -204,7 +194,6 @@ BhMain (
         getkeystroke (&key);
         break;
       } else if (c == 'x' || c == 'q') {
-        Print (L"\nExiting...\n");
         return EFI_SUCCESS;
       }
     }
@@ -263,6 +252,7 @@ UefiMain (
 
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "BH: Failed to locate loaded image - %r\n", Status));
+    CpuDeadLoop();
     return EFI_NOT_FOUND;
   }
 
@@ -278,14 +268,87 @@ UefiMain (
 
   if (FileSystem == NULL) {
     DEBUG ((DEBUG_ERROR, "BH: Failed to obtain own file system\n"));
+    CpuDeadLoop();
     return EFI_NOT_FOUND;
   }
 
-#if 1
-  Status = BhMain (FileSystem);
+  OC_STORAGE_CONTEXT OpenCoreStorage;
+
+  Status = OcStorageInitFromFs (
+    &OpenCoreStorage,
+    FileSystem,
+    BOOT_HELPER_ROOT_PATH,
+    NULL //mOpenCoreVaultKey
+    );
+
+  if (EFI_ERROR (Status)) {
+    DEBUG ((DEBUG_ERROR, "BH: Failed to open root FS - %r\n", Status));
+    CpuDeadLoop();
+    return Status;
+  }
+
+  CHAR8                     *ConfigData;
+  UINT32                    ConfigDataSize;
+  OC_GLOBAL_CONFIG          Config;
+
+  ConfigData = OcStorageReadFileUnicode (
+    &OpenCoreStorage,
+    BOOT_HELPER_CONFIG_PATH,
+    &ConfigDataSize
+    );
+
+  if (ConfigData != NULL) {
+    DEBUG ((DEBUG_INFO, "BH: Loaded configuration of %u bytes\n", ConfigDataSize));
+
+    Status = OcConfigurationInit (
+      &Config,
+      ConfigData,
+      ConfigDataSize
+      );
+
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "BH: Failed to parse configuration!\n"));
+      CpuDeadLoop ();
+      return EFI_UNSUPPORTED; ///< Should be unreachable.
+    }
+
+    FreePool (ConfigData);
+  } else {
+    DEBUG ((DEBUG_ERROR, "BH: Failed to load configuration!\n"));
+    CpuDeadLoop ();
+    return EFI_UNSUPPORTED; ///< Should be unreachable.
+  }
+
+  CONST CHAR8 *AsciiPicker;
+  AsciiPicker = OC_BLOB_GET (&Config.Misc.Boot.PickerMode);
+  Print (
+    L"BH: I think we've loaded OpenCore config from %s/%s; Misc.Boot.PickerMode=\"%a\"\n",
+    BOOT_HELPER_ROOT_PATH,
+    BOOT_HELPER_CONFIG_PATH,
+    AsciiPicker
+    );
+
+  Status = BhMain ();
+
+  OcConfigurationFree (&Config);
+
+  OcStorageFree (&OpenCoreStorage);
+
+  if (mBhOnExit == BhOnExitReboot) {
+    Print(L"\nRebooting...\n");
+    Reboot();
+    CpuDeadLoop();
+  } else if (mBhOnExit == BhOnExitShutdown) {
+    Print(L"\nShutting down...\n");
+    Shutdown();
+    CpuDeadLoop();
+  }
+
+  Print (L"\nExiting w/ %r...\n", Status);
+
+  Print (L"\nAny key...\n");
+  EFI_INPUT_KEY key;
+  getkeystroke(&key);
 
   return Status;
-#else
-  return EFI_SUCCESS;
-#endif
 }

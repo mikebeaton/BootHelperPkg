@@ -15,7 +15,17 @@
 #include <Uefi.h>
 #include <Library/UefiLib.h>
 
+#define BOOT_HELPER_ROOT_PATH       L"EFI\\BootHelper"
+#define BOOT_HELPER_CONFIG_PATH     L"BootHelper.plist"
+
+typedef enum BH_ON_EXIT_ {
+  BhOnExitExit,
+  BhOnExitShutdown,
+  BhOnExitReboot,
+} BH_ON_EXIT;
+
 extern BOOLEAN mInteractive;
 extern BOOLEAN mClearScreen;
+extern BH_ON_EXIT mBhOnExit;
 
 #endif

@@ -48,10 +48,12 @@
 
 [LibraryClasses]
   BaseLib
-  UefiLib
-  UefiBootServicesTableLib
-  UefiRuntimeServicesTableLib
   BaseMemoryLib
   MemoryAllocationLib
-  UefiApplicationEntryPoint
+  OcConfigurationLib
   OcConsoleControlEntryModeGenericLib
+  OcStorageLib
+  UefiApplicationEntryPoint
+  UefiBootServicesTableLib
+  UefiLib
+  UefiRuntimeServicesTableLib

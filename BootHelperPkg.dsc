@@ -30,7 +30,9 @@
   DebugPrintErrorLevelLib|MdePkg/Library/BaseDebugPrintErrorLevelLib/BaseDebugPrintErrorLevelLib.inf
   DevicePathLib|MdePkg/Library/UefiDevicePathLib/UefiDevicePathLib.inf
   MemoryAllocationLib|MdePkg/Library/UefiMemoryAllocationLib/UefiMemoryAllocationLib.inf
+  OcConfigurationLib|OpenCorePkg/Library/OcConfigurationLib/OcConfigurationLib.inf
   OcConsoleControlEntryModeGenericLib|OpenCorePkg/Library/OcConsoleControlEntryModeLib/OcConsoleControlEntryModeGenericLib.inf
+  OcStorageLib|OpenCorePkg/Library/OcStorageLib/OcStorageLib.inf
   PcdLib|MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
   PrintLib|MdePkg/Library/BasePrintLib/BasePrintLib.inf
   TimerLib|OpenCorePkg/Library/OcTimerLib/OcTimerLib.inf
@@ -51,6 +53,11 @@
   PciLib|MdePkg/Library/BasePciLibCf8/BasePciLibCf8.inf
   PlatformHookLib|MdeModulePkg/Library/BasePlatformHookLibNull/BasePlatformHookLibNull.inf
   SerialPortLib|MdeModulePkg/Library/BaseSerialPortLib16550/BaseSerialPortLib16550.inf
+# Additional direct or indirect dependencies of OcStorageLib
+  OcCryptoLib|OpenCorePkg/Library/OcCryptoLib/OcCryptoLib.inf
+  OcSerializeLib|OpenCorePkg/Library/OcSerializeLib/OcSerializeLib.inf
+  OcTemplateLib|OpenCorePkg/Library/OcTemplateLib/OcTemplateLib.inf
+  OcXmlLib|OpenCorePkg/Library/OcXmlLib/OcXmlLib.inf
 
 [Components]
   BootHelperPkg/Application/BootHelper/BootHelper.inf
