@@ -11,7 +11,6 @@
 //
 // OC Libraries
 //
-#include <Library/OcConfigurationLib.h>
 #include <Library/OcDebugLogLib.h>
 #include <Library/OcDevicePathLib.h>
 #include <Library/OcFileLib.h>
@@ -27,13 +26,14 @@
 //
 // Local includes
 //
+#include "BhConfig.h"
 #include "BootHelper.h"
 #include "EzKb.h"
 #include "DisplayVars.h"
 #include "Utils.h"
 
 BOOLEAN mInteractive            = TRUE;
-BOOLEAN mClearScreen            = TRUE;
+BOOLEAN mClearScreen            = FALSE;
 BOOLEAN mKeyPromptOnExit        = FALSE;
 BH_ON_EXIT mBhOnExit            = BhOnExitExit;
 
@@ -116,6 +116,10 @@ void ToggleStartupMute()
 }
 
 STATIC
+BH_GLOBAL_CONFIG
+mBootHelperConfiguration;
+
+STATIC
 EFI_STATUS
 EFIAPI
 BhMain ()
@@ -128,8 +132,17 @@ BhMain ()
 
     SetColour(EFI_LIGHTMAGENTA);
     Print(L"macOS NVRAM Boot Helper\n");
-    Print(L"0.2.7 oc\n");
+    Print(L"0.2.8 oc-340\n");
     SetColour(EFI_WHITE);
+    Print(L"\n");
+
+    CONST CHAR8 *AsciiPicker;
+    AsciiPicker = OC_BLOB_GET (&mBootHelperConfiguration.Config.Xanana);
+    for (UINTN i = 0; ; i++) {
+      CHAR8 c = AsciiPicker[i];
+      if (c == '\0') break;
+      Print (L"%c", (CHAR16)c);
+    }
     Print(L"\n");
 
 #if 1
@@ -201,10 +214,6 @@ BhMain ()
 }
 
 STATIC
-OC_GLOBAL_CONFIG
-mOpenCoreConfiguration;
-
-STATIC
 OC_STORAGE_CONTEXT
 mOpenCoreStorage;
 
@@ -228,9 +237,9 @@ mStorageRoot;
 // OpenCoreMisc.c - OcMiscEarlyInit
 //
 EFI_STATUS
-BhConfigInit (
+BhConfigLoad (
   IN  OC_STORAGE_CONTEXT *Storage,
-  OUT OC_GLOBAL_CONFIG   *Config,
+  OUT BH_GLOBAL_CONFIG   *Config,
   IN  OC_RSA_PUBLIC_KEY  *VaultKey  OPTIONAL
   )
 {
@@ -247,7 +256,7 @@ BhConfigInit (
   if (ConfigData != NULL) {
     DEBUG ((DEBUG_INFO, "BH: Loaded configuration of %u bytes\n", ConfigDataSize));
 
-    Status = OcConfigurationInit (Config, ConfigData, ConfigDataSize);
+    Status = BhConfigurationInit (Config, ConfigData, ConfigDataSize);
     if (EFI_ERROR (Status)) {
       DEBUG ((DEBUG_ERROR, "BH: Failed to parse configuration!\n"));
       return EFI_UNSUPPORTED;
@@ -275,10 +284,10 @@ BhConfigAndMain (
 {
   EFI_STATUS                Status;
 
-  DEBUG ((DEBUG_INFO, "BH: BhConfigAndMain calling BhConfigInit...\n"));
-  Status = BhConfigInit (
+  DEBUG ((DEBUG_INFO, "BH: BhConfigAndMain calling BhConfigLoad...\n"));
+  Status = BhConfigLoad (
     Storage,
-    &mOpenCoreConfiguration,
+    &mBootHelperConfiguration,
     mOpenCoreVaultKey
     );
 
@@ -287,6 +296,8 @@ BhConfigAndMain (
   }
 
   Status = BhMain();
+
+  BhConfigurationFree (&mBootHelperConfiguration);
 
   return Status;
 }

@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Config</key>
+	<dict>
+		<key>PickerMode</key>
+		<string default="Builtin">Muppet</string>
+		<key>PollAppleHotKeys</key>
+		<false/>
+		<key>ShowPicker</key>
+		<true/>
+		<key>Xanana</key>
+		<string>Damn splitter</string>
+	</dict>
+	<key>Misc</key>
+	<dict>
+		<key h="BLESS">BlessOverride</key>
+		<array hide="children">
+			<string></string>
+		</array>
+		<key this_c="ConfigurationBoot">Boot</key>
+		<dict>
+			<key>ConsoleAttributes</key>
+			<integer>0</integer>
+			<key>HibernateMode</key>
+			<string default="None">None</string>
+			<key>HideAuxiliary</key>
+			<false/>
+			<key>PickerAttributes</key>
+			<integer>17</integer>
+			<key>PickerAudioAssist</key>
+			<false/>
+			<key>PickerMode</key>
+			<string default="Builtin">Builtin</string>
+			<key>PollAppleHotKeys</key>
+			<false/>
+			<key>ShowPicker</key>
+			<true/>
+			<key>TakeoffDelay</key>
+			<integer>0</integer>
+			<key>Timeout</key>
+			<integer>5</integer>
+		</dict>
+		<key this_c="ConfigurationDebug">Debug</key>
+		<dict>
+			<key>AppleDebug</key>
+			<false/>
+			<key>ApplePanic</key>
+			<false/>
+			<key>DisableWatchDog</key>
+			<false/>
+			<key>DisplayDelay</key>
+			<integer>0</integer>
+			<key>DisplayLevel</key>
+			<integer type="UINT64">2147483650</integer>
+			<key>SerialInit</key>
+			<false/>
+			<key>SysReport</key>
+			<false/>
+			<key>Target</key>
+			<integer>3</integer>
+		</dict>
+		<key>Entries</key>
+		<array xref="BH_MISC_TOOLS_ARRAY">
+			<dict xref="BH_MISC_TOOLS_ENTRY">
+				<key>Arguments</key>
+				<string></string>
+				<key>Auxiliary</key>
+				<false/>
+				<key>Comment</key>
+				<string>Not signed for security reasons</string>
+				<key>Enabled</key>
+				<false/>
+				<key>Name</key>
+				<string>CustomOS</string>
+				<key>Path</key>
+				<string>PciRoot(0x0)/Pci(0x1,0x1)/Pci(0x0,0x0)/NVMe(0x1,11-22-33-44-55-66-77-88)/HD(1,GPT,00000000-0000-0000-0000-000000000000,0x800,0x64000)/\EFI\BOOT\BOOTX64.EFI</string>
+				<key>TextMode</key>
+				<false/>
+			</dict>
+		</array>
+		<key this_c="ConfigurationSecurity">Security</key>
+		<dict>
+			<key>AllowNvramReset</key>
+			<false/>
+			<key>AllowSetDefault</key>
+			<false/>
+			<key>ApECID</key>
+			<integer type="UINT64">0</integer>
+			<key>AuthRestart</key>
+			<false/>
+			<key>BlacklistAppleUpdate</key>
+			<true/>
+			<key>BootProtect</key>
+			<string default="None">None</string>
+			<key>DmgLoading</key>
+			<string default="Signed">Signed</string>
+			<key>EnablePassword</key>
+			<false/>
+			<key>ExposeSensitiveData</key>
+			<integer default="OCS_EXPOSE_VERSION">6</integer>
+			<key>HaltLevel</key>
+			<integer type="UINT64" default="0x80000000">2147483648</integer>
+			<key>PasswordHash</key>
+			<data type="UINT8" size="64"></data>
+			<key>PasswordSalt</key>
+			<data></data>
+			<key>ScanPolicy</key>
+			<integer default="OC_SCAN_DEFAULT_POLICY">17760515</integer>
+			<key>SecureBootModel</key>
+			<string default="Default">Default</string>
+			<key>Vault</key>
+			<string default="Secure">Secure</string>
+		</dict>
+		<key>Tools</key>
+		<array>
+			<dict>
+				<key>Arguments</key>
+				<string></string>
+				<key>Auxiliary</key>
+				<false/>
+				<key>Comment</key>
+				<string>Not signed for security reasons</string>
+				<key>Enabled</key>
+				<false/>
+				<key>Name</key>
+				<string>UEFI Shell</string>
+				<key>Path</key>
+				<string>OpenShell.efi</string>
+				<key>RealPath</key>
+				<false/>
+				<key>TextMode</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>Arguments</key>
+				<string></string>
+				<key>Auxiliary</key>
+				<false/>
+				<key>Comment</key>
+				<string>Memory testing utility</string>
+				<key>Enabled</key>
+				<false/>
+				<key>Name</key>
+				<string>memcheck</string>
+				<key>Path</key>
+				<string>memcheck/memcheck.efi</string>
+				<key>RealPath</key>
+				<false/>
+				<key>TextMode</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>Arguments</key>
+				<string>Shutdown</string>
+				<key>Auxiliary</key>
+				<true/>
+				<key>Comment</key>
+				<string>Perform shutdown</string>
+				<key>Enabled</key>
+				<false/>
+				<key>Name</key>
+				<string>Shutdown</string>
+				<key>Path</key>
+				<string>ResetSystem.efi</string>
+				<key>RealPath</key>
+				<false/>
+				<key>TextMode</key>
+				<false/>
+			</dict>
+		</array>
+	</dict>
+	<key c="Nvram">NVRAM</key>
+	<dict>
+		<key>Add</key>
+		<dict type="map" comment="NVRAM values is an associative map of GUIDS with their property key value maps">
+			<key>4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14</key>
+			<dict type="map">
+				<key>DefaultBackgroundColor</key>
+				<data type="blob">AAAAAA==</data>
+				<key>UIScale</key>
+				<data>AQ==</data>
+			</dict>
+			<key>4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102</key>
+			<dict>
+				<key>rtc-blacklist</key>
+				<data></data>
+			</dict>
+			<key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key>
+			<dict>
+				<key>SystemAudioVolume</key>
+				<data>Rg==</data>
+				<key>boot-args</key>
+				<string>-v keepsyms=1</string>
+				<key>run-efi-updater</key>
+				<string>No</string>
+				<key>csr-active-config</key>
+				<data>AAAAAA==</data>
+				<key>prev-lang:kbd</key>
+				<data>cnUtUlU6MjUy</data>
+			</dict>
+		</dict>
+		<key>Delete</key>
+		<dict type="map">
+			<key>4D1EDE05-38C7-4A6A-9CC6-4BCCA8B38C14</key>
+			<array>
+				<string>UIScale</string>
+				<string>DefaultBackgroundColor</string>
+			</array>
+			<key>4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102</key>
+			<array>
+				<string>rtc-blacklist</string>
+			</array>
+			<key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key>
+			<array>
+				<string>boot-args</string>
+			</array>
+		</dict>
+		<key>LegacyEnable</key>
+		<false/>
+		<key>LegacyOverwrite</key>
+		<false/>
+		<key h="LEGACY" c="Legacy">LegacySchema</key>
+		<dict type="map">
+			<key>7C436110-AB2A-4BBB-A880-FE41995C9F82</key>
+			<array>
+				<string>EFILoginHiDPI</string>
+				<string>EFIBluetoothDelay</string>
+				<string>LocationServicesEnabled</string>
+				<string>SystemAudioVolume</string>
+				<string>SystemAudioVolumeDB</string>
+				<string>SystemAudioVolumeSaved</string>
+				<string>bluetoothActiveControllerInfo</string>
+				<string>bluetoothInternalControllerInfo</string>
+				<string>flagstate</string>
+				<string>fmm-computer-name</string>
+				<string>fmm-mobileme-token-FMM</string>
+				<string>fmm-mobileme-token-FMM-BridgeHasAccount</string>
+				<string>nvda_drv</string>
+				<string>prev-lang:kbd</string>
+			</array>
+			<key>8BE4DF61-93CA-11D2-AA0D-00E098032B8C</key>
+			<array>
+				<string>Boot0080</string>
+				<string>Boot0081</string>
+				<string>Boot0082</string>
+				<string>BootNext</string>
+				<string>BootOrder</string>
+			</array>
+		</dict>
+		<key>WriteFlash</key>
+		<true/>
+	</dict>
+</dict>
+</plist>

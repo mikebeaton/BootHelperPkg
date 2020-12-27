@@ -30,6 +30,8 @@
 #
 
 [Sources]
+  BhConfig.c
+  BhConfig.h
   BootHelper.c
   BootHelper.h
   EzKb.c
@@ -50,7 +52,6 @@
   BaseLib
   BaseMemoryLib
   MemoryAllocationLib
-  OcConfigurationLib
   OcConsoleControlEntryModeGenericLib
   OcStorageLib
   UefiApplicationEntryPoint
