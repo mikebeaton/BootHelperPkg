@@ -50,11 +50,11 @@ The code now compiles in a normal EDK 2 environment, and I'm in the process of l
 
 ### Earier versions
 
-The code up to [this tag](../../tree/last-visualuefi) was built using [VisualUefi](https://github.com/ionescu007/VisualUefi) for Windows - which is a helpful stepping stone between EDK 1 and the full EDK 2 development environment. If the project did not link against various parts of OpenCore, there'd be no real reason not to leave in the VisualUefi support and have the project buildable in both VisualUefi and EDK 2; since it does, it's almost certainly not sensible to do the additional work required to make VisualUefi build the required parts of OC (especially since OC itself is likely to change more, and more often, than the EDK2 library).
+The first versions of the code up to [this tag](../../tree/last-edk1) were built in EDK 1 and compile fine just with `gcc` on Linux against the basic EDK 1 header files, with [these prerequisites](https://forums.macrumors.com/threads/macos-11-big-sur-on-unsupported-macs-thread.2242172/page-202?post=29009038#post-29009038).
 
-If you are playing around with the Windows-compilable (i.e. VisualUefi) version of the code, you are strongly recommended to use git with `core.autocrlf` set to `true` because the line endings in the repo are LF.
+Later version of the code up to [this tag](../../tree/last-visualuefi) were built using [VisualUefi](https://github.com/ionescu007/VisualUefi) for Windows - which is a helpful stepping stone between EDK 1 and the full EDK 2 development environment. If the project did not link against various parts of OpenCore, there'd be no real reason not to leave in the VisualUefi support and have the project buildable in both VisualUefi and EDK 2; since it does, it's almost certainly not sensible to do the additional work required to make VisualUefi build the required parts of OC (especially since OC itself is likely to change more, and more often, than the EDK2 library).
 
-The code up to [this tag](../../tree/last-edk1) was built in EDK 1 and compiles fine just with `gcc` on Linux against the basic EDK 1 header files, with [these prerequisites](https://forums.macrumors.com/threads/macos-11-big-sur-on-unsupported-macs-thread.2242172/page-202?post=29009038#post-29009038).
+If you want to play around with this ealier, Windows-compilable (i.e. VisualUefi) version of the code, you are strongly recommended to use git with `core.autocrlf` set to `true` because the line endings in the repo are LF.
 
 ## Credits
 
