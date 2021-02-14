@@ -51,7 +51,8 @@
 [LibraryClasses]
   BaseLib
   BaseMemoryLib
-  MemoryAllocationLib
+  MemoryAllocationLib ### TEST - What does removing this break? And why do(n't) we need OcConfigurationLib?
+  OcConfigurationLib
   OcConsoleControlEntryModeGenericLib
   OcStorageLib
   UefiApplicationEntryPoint

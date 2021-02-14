@@ -251,10 +251,11 @@ BhConfigurationInit (
   IN  UINT32             Size
   )
 {
-  BOOLEAN  Success;
+  BOOLEAN   Success;
+  UINT32    ErrorCount;
 
   BH_GLOBAL_CONFIG_CONSTRUCT (Config, sizeof (*Config));
-  Success = ParseSerialized (Config, &mRootConfigurationInfo, Buffer, Size);
+  Success = ParseSerialized (Config, &mRootConfigurationInfo, Buffer, Size, &ErrorCount);
 
   if (!Success) {
     BH_GLOBAL_CONFIG_DESTRUCT (Config, sizeof (*Config));

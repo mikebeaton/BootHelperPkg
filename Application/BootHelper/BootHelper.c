@@ -33,8 +33,9 @@
 #include "Utils.h"
 
 BOOLEAN mInteractive            = TRUE;
-BOOLEAN mClearScreen            = FALSE;
+BOOLEAN mClearScreen            = TRUE;
 BOOLEAN mKeyPromptOnExit        = FALSE;
+BOOLEAN mLoadConfig             = FALSE;
 BH_ON_EXIT mBhOnExit            = BhOnExitExit;
 
 #if false
@@ -56,9 +57,13 @@ UefiUnload (
   { 0x4d1fda02, 0x38c7, 0x4a6a, {0x9c, 0xc6, 0x4b, 0xcc, 0xa8, 0xb3, 0x01, 0x02} }
 STATIC EFI_GUID gEfiOpenCoreGuid = EFI_OPEN_CORE_GUID;
 
-#define EFI_APPLE_GUID \
+#define EFI_APPLE_BOOT_GUID \
   { 0x7c436110, 0xab2a, 0x4bbb, {0xa8, 0x80, 0xfe, 0x41, 0x99, 0x5c, 0x9f, 0x82} }
-STATIC EFI_GUID gEfiAppleGuid = EFI_APPLE_GUID;
+STATIC EFI_GUID gEfiAppleBootGuid = EFI_APPLE_BOOT_GUID;
+
+#define EFI_APPLE_VENDOR_GUID \
+  { 0x4d1ede05, 0x38c7, 0x4a6a, {0x9c, 0xc6, 0x4b, 0xcc, 0xa8, 0xb3, 0x8c, 0x14} }
+STATIC EFI_GUID gEfiAppleVendorGuid = EFI_APPLE_VENDOR_GUID;
 
 // with zero terminator
 STATIC CHAR8 gBootArgsVal[] = "-no_compat_check";
@@ -72,7 +77,7 @@ DisplayAppleVar(
   BOOLEAN isString
   )
 {
-  DisplayNvramValueWithoutGuid(Name, &gEfiAppleGuid, isString);
+  DisplayNvramValueWithoutGuid(Name, &gEfiAppleBootGuid, isString);
 }
 
 EFI_STATUS
@@ -82,7 +87,7 @@ ToggleAppleVar(
   UINTN PreferredSize
   )
 {
-  return ToggleOrSetVar(Name, &gEfiAppleGuid, PreferredValue, PreferredSize, TRUE);
+  return ToggleOrSetVar(Name, &gEfiAppleBootGuid, PreferredValue, PreferredSize, TRUE);
 }
 
 EFI_STATUS
@@ -92,7 +97,7 @@ SetAppleVar(
   UINTN PreferredSize
   )
 {
-  return ToggleOrSetVar(Name, &gEfiAppleGuid, PreferredValue, PreferredSize, FALSE);
+  return ToggleOrSetVar(Name, &gEfiAppleBootGuid, PreferredValue, PreferredSize, FALSE);
 }
 
 void ToggleBootArgs()
@@ -124,7 +129,7 @@ EFI_STATUS
 EFIAPI
 BhMain ()
 {
-  BOOLEAN showOCVersion = FALSE;
+  BOOLEAN showOCVersion = TRUE;
 
   while (TRUE) {
     // inter alia, we want to clear the other stuff on the hidden text screen, before switching to viewing the text...
@@ -132,10 +137,11 @@ BhMain ()
 
     SetColour(EFI_LIGHTMAGENTA);
     Print(L"macOS NVRAM Boot Helper\n");
-    Print(L"0.2.8 oc-340\n");
+    Print(L"0.2.9 guid\n");
     SetColour(EFI_WHITE);
-    Print(L"\n");
 
+#if 0
+    Print(L"\n");
     CONST CHAR8 *AsciiPicker;
     AsciiPicker = OC_BLOB_GET (&mBootHelperConfiguration.Config.Xanana);
     for (UINTN i = 0; ; i++) {
@@ -144,15 +150,27 @@ BhMain ()
       Print (L"%c", (CHAR16)c);
     }
     Print(L"\n");
+#endif
+
+    if (showOCVersion) {
+      Print(L"\n");
+      DisplayNvramValueWithoutGuid(L"opencore-version", &gEfiOpenCoreGuid, TRUE);
+    }
+
+    Print(L"\n");
+    DisplayNvramValueWithoutGuid(L"SSN", &gEfiAppleVendorGuid, TRUE);
+    DisplayNvramValueWithoutGuid(L"system-id", &gEfiAppleVendorGuid, TRUE);
+    DisplayNvramValueWithoutGuid(L"ROM", &gEfiAppleVendorGuid, TRUE);
+    DisplayNvramValueWithoutGuid(L"HW_ROM", &gEfiAppleVendorGuid, TRUE);
+    DisplayNvramValueWithoutGuid(L"MLB", &gEfiAppleVendorGuid, TRUE);
+    DisplayNvramValueWithoutGuid(L"HW_MLB", &gEfiAppleVendorGuid, TRUE);
 
 #if 1
+    Print(L"\n");
     DisplayAppleVar(L"boot-args", TRUE);
     DisplayAppleVar(L"csr-active-config", FALSE);
     DisplayAppleVar(L"StartupMute", TRUE);
 #endif
-    if (showOCVersion) {
-      DisplayNvramValueWithoutGuid(L"opencore-version", &gEfiOpenCoreGuid, TRUE);
-    }
 
     SetColour(EFI_LIGHTRED);
     Print(L"\nboot-[A]rgs; [B]ig Sur; [C]atalina; Startup[M]ute\n[R]eboot; [S]hutdown; [Q]uit; E[x]it; [L]ist\n");
@@ -284,20 +302,26 @@ BhConfigAndMain (
 {
   EFI_STATUS                Status;
 
-  DEBUG ((DEBUG_INFO, "BH: BhConfigAndMain calling BhConfigLoad...\n"));
-  Status = BhConfigLoad (
-    Storage,
-    &mBootHelperConfiguration,
-    mOpenCoreVaultKey
-    );
+  if (mLoadConfig) {
+    DEBUG ((DEBUG_INFO, "BH: BhConfigAndMain calling BhConfigLoad...\n"));
+    Status = BhConfigLoad (
+      Storage,
+      &mBootHelperConfiguration,
+      mOpenCoreVaultKey
+      );
 
-  if (EFI_ERROR (Status)) {
-    return Status;
+    if (EFI_ERROR (Status)) {
+      return Status;
+    }
+  } else {
+    DEBUG ((DEBUG_WARN, "BH: Load config disabled\n"));
   }
 
   Status = BhMain();
 
-  BhConfigurationFree (&mBootHelperConfiguration);
+  if (mLoadConfig) {
+    BhConfigurationFree (&mBootHelperConfiguration);
+  }
 
   return Status;
 }

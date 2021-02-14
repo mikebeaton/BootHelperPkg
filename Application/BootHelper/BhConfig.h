@@ -22,7 +22,7 @@
 #include <Library/DebugLib.h>
 #include <Library/OcSerializeLib.h>
 #include <Library/OcBootManagementLib.h>
-#include <Library/OcConfigurationConstants.h>
+#include <Library/OcConfigurationLib.h>
 
 /**
   Config section

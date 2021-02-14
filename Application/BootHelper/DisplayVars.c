@@ -186,7 +186,7 @@ DisplayNvramValueOptionalGuid (
   VOID *Data;
 
   if (displayGuid) {
-      Print(L"%g:", Name);
+      Print(L"%g:", Guid);
   }
 
     Print(L"%s", Name);
