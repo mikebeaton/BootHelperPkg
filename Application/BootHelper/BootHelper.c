@@ -159,11 +159,14 @@ BhMain ()
 
     Print(L"\n");
     DisplayNvramValueWithoutGuid(L"SSN", &gEfiAppleVendorGuid, TRUE);
+    DisplayNvramValueWithoutGuid(L"HW_SSN", &gEfiAppleVendorGuid, TRUE);
     DisplayNvramValueWithoutGuid(L"system-id", &gEfiAppleVendorGuid, TRUE);
     DisplayNvramValueWithoutGuid(L"ROM", &gEfiAppleVendorGuid, TRUE);
     DisplayNvramValueWithoutGuid(L"HW_ROM", &gEfiAppleVendorGuid, TRUE);
     DisplayNvramValueWithoutGuid(L"MLB", &gEfiAppleVendorGuid, TRUE);
     DisplayNvramValueWithoutGuid(L"HW_MLB", &gEfiAppleVendorGuid, TRUE);
+    DisplayNvramValueWithoutGuid(L"BID", &gEfiAppleVendorGuid, TRUE);
+    DisplayNvramValueWithoutGuid(L"HW_BID", &gEfiAppleVendorGuid, TRUE);
 
 #if 1
     Print(L"\n");
