@@ -236,7 +236,9 @@ DisplayNvramValueWithoutGuid (
 }
 
 EFI_STATUS
-ListVars ()
+ListVars (
+  IN CHAR16 *Prefix OPTIONAL
+  )
 {
   EFI_STATUS  Status;
   EFI_GUID    Guid;
@@ -285,32 +287,34 @@ ListVars ()
     }
 
     //
-    // Display var
+    // Conditionally display var
     //
-        Status = DisplayNvramValue (Name, &Guid, TRUE);
+    if (Prefix == NULL || StrnCmp (Name, Prefix, StrLen (Prefix)) == 0) {
+      Status = DisplayNvramValue (Name, &Guid, TRUE);
 
-    //
-    // Not expecting error here but exit if there is one
-    //
-    if (EFI_ERROR (Status)) {
-      FreePool (Name);
-      return Status;
-    }
-
-    //
-    // Keyboard control
-    //
-    if (!showAll) {
-      EFI_INPUT_KEY key;
-      getkeystroke (&key);
-
-      CHAR16 c = key.UnicodeChar;
-      if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a';
-      if (c == 'q' || c == 'x') {
+      //
+      // Not expecting error here but exit if there is one
+      //
+      if (EFI_ERROR (Status)) {
         FreePool (Name);
-        return EFI_SUCCESS;
-      } else if (c == 'a') {
-        showAll = TRUE;
+        return Status;
+      }
+
+      //
+      // Keyboard control after each shown var
+      //
+      if (!showAll) {
+        EFI_INPUT_KEY key;
+        getkeystroke (&key);
+
+        CHAR16 c = key.UnicodeChar;
+        if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a';
+        if (c == 'q' || c == 'x') {
+          FreePool (Name);
+          return EFI_SUCCESS;
+        } else if (c == 'a') {
+          showAll = TRUE;
+        }
       }
     }
   }

@@ -61,9 +61,9 @@ STATIC EFI_GUID gEfiOpenCoreGuid = EFI_OPEN_CORE_GUID;
   { 0x7c436110, 0xab2a, 0x4bbb, {0xa8, 0x80, 0xfe, 0x41, 0x99, 0x5c, 0x9f, 0x82} }
 STATIC EFI_GUID gEfiAppleBootGuid = EFI_APPLE_BOOT_GUID;
 
-#define EFI_APPLE_VENDOR_GUID \
-  { 0x4d1ede05, 0x38c7, 0x4a6a, {0x9c, 0xc6, 0x4b, 0xcc, 0xa8, 0xb3, 0x8c, 0x14} }
-STATIC EFI_GUID gEfiAppleVendorGuid = EFI_APPLE_VENDOR_GUID;
+// #define EFI_APPLE_VENDOR_GUID \
+//   { 0x4d1ede05, 0x38c7, 0x4a6a, {0x9c, 0xc6, 0x4b, 0xcc, 0xa8, 0xb3, 0x8c, 0x14} }
+// STATIC EFI_GUID gEfiAppleVendorGuid = EFI_APPLE_VENDOR_GUID;
 
 // with zero terminator
 STATIC CHAR8 gBootArgsVal[] = "-no_compat_check";
@@ -137,7 +137,7 @@ BhMain ()
 
     SetColour(EFI_LIGHTMAGENTA);
     Print(L"macOS NVRAM Boot Helper\n");
-    Print(L"0.2.9 guid\n");
+    Print(L"0.3.0 guid\n");
     SetColour(EFI_WHITE);
 
 #if 0
@@ -157,6 +157,7 @@ BhMain ()
       DisplayNvramValueWithoutGuid(L"opencore-version", &gEfiOpenCoreGuid, TRUE);
     }
 
+#if 0
     Print(L"\n");
     DisplayNvramValueWithoutGuid(L"SSN", &gEfiAppleVendorGuid, TRUE);
     DisplayNvramValueWithoutGuid(L"HW_SSN", &gEfiAppleVendorGuid, TRUE);
@@ -167,6 +168,7 @@ BhMain ()
     DisplayNvramValueWithoutGuid(L"HW_MLB", &gEfiAppleVendorGuid, TRUE);
     DisplayNvramValueWithoutGuid(L"BID", &gEfiAppleVendorGuid, TRUE);
     DisplayNvramValueWithoutGuid(L"HW_BID", &gEfiAppleVendorGuid, TRUE);
+#endif
 
 #if 1
     Print(L"\n");
@@ -176,7 +178,7 @@ BhMain ()
 #endif
 
     SetColour(EFI_LIGHTRED);
-    Print(L"\nboot-[A]rgs; [B]ig Sur; [C]atalina; Startup[M]ute\n[R]eboot; [S]hutdown; [Q]uit; E[x]it; [L]ist\n");
+    Print(L"\nboot-[A]rgs; [B]ig Sur; [C]atalina; Startup[M]ute\n[R]eboot; [S]hutdown; [Q]uit; E[x]it; [L]ist; Boo[T] args list\n");
     SetColour(EFI_WHITE);
 
     EFI_INPUT_KEY key;
@@ -213,10 +215,10 @@ BhMain ()
       } else if (c == 's') {
         mBhOnExit = BhOnExitShutdown;
         return EFI_SUCCESS;
-      } else if (c == 'l') {
-        Print (L"Listing... (any key for next or [Q]uit; E[x]it; List [a]ll remaining)\n");
+      } else if (c == 'l' || c == 't') {
+        Print (L"Listing%s... (any key for next or [Q]uit; E[x]it; List [a]ll remaining)\n", c == 't' ? L" boot vars" : L"");
         EFI_STATUS Status;
-        Status = ListVars();
+        Status = ListVars(c == 't' ? L"Boot" : NULL);
         if (Status == EFI_NOT_FOUND) {
           Print( L"Listed.\n");
         } else if (Status == EFI_SUCCESS) {

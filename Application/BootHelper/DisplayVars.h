@@ -41,9 +41,24 @@ DisplayNvramValueWithoutGuid (
   BOOLEAN       isString
   );
 
-// List all NVRAM vars to conout, with some keyboard control
+/**
+  List all NVRAM vars to conout, with some keyboard control:
+
+  'a' - list remaining with no wait for keyboard input
+  'x', 'q' - abort listing
+  Any other key - show next var
+
+  @param[in]  Prefix  Only display vars starting with prefix; display all vars if NULL.
+
+  @retval             EFI_NOT_FOUND if listing completed, no more vars to show;
+                      EFI_SUCCESS if listing aborted early ßby user;
+                      EFI_OUT_OF_RESOURCES if could not allocate;
+                      any other return value, error returned by subsidiary method.
+**/
 EFI_STATUS
-ListVars ();
+ListVars (
+  IN CHAR16 *Prefix OPTIONAL
+  );
 
 // Toggle or set NVRAM var
 EFI_STATUS
