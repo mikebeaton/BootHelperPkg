@@ -41,6 +41,7 @@
   UefiLib|MdePkg/Library/UefiLib/UefiLib.inf
   UefiRuntimeServicesTableLib|MdePkg/Library/UefiRuntimeServicesTableLib/UefiRuntimeServicesTableLib.inf
 # Direct or indirect dependencies of OcDebugLogLib
+  HobLib|MdePkg/Library/DxeHobLib/DxeHobLib.inf
   IoLib|MdePkg/Library/BaseIoLibIntrinsic/BaseIoLibIntrinsic.inf
   OcCpuLib|OpenCorePkg/Library/OcCpuLib/OcCpuLib.inf
   OcDataHubLib|OpenCorePkg/Library/OcDataHubLib/OcDataHubLib.inf
