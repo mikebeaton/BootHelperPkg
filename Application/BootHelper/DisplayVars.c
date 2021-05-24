@@ -32,6 +32,15 @@
 #include "EzKb.h"
 #include "Utils.h"
 
+//
+// We're seeing this one all the time on Apl, so there's no point reporting it all the time
+//
+#define EFI_VARIABLE_MYSTERY         0x80000000
+
+#define BOOT_HELPER_NVRAM_ATTR        (EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS)
+#define BOOT_HELPER_NVRAM_NV_ATTR     (EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE)
+#define BOOT_HELPER_NVRAM_NORMAL_ATTR (EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_MYSTERY)
+
 #define EFI_QEMU_C16_GUID_1 \
   { 0x158DEF5A, 0xF656, 0x419C, {0xB0, 0x27, 0x7A, 0x31, 0x92, 0xC0, 0x79, 0xD2} }
 #define EFI_QEMU_C16_GUID_2 \
@@ -205,9 +214,23 @@ DisplayNvramValueOptionalGuid (
 
     Print(L" = ");
     DisplayVar(Guid, Data, DataSize, TRUE);
-  if ((Attributes & EFI_VARIABLE_NON_VOLATILE) == 0) {
-    Print(L" (non-persistent)");
-  }
+
+    if ((Attributes & EFI_VARIABLE_NON_VOLATILE) == 0) {
+      Print(L" (volatile)");
+    }
+    
+    if ((Attributes & BOOT_HELPER_NVRAM_ATTR) != BOOT_HELPER_NVRAM_ATTR) {
+      if ((Attributes & EFI_VARIABLE_BOOTSERVICE_ACCESS) != 0) {
+        Print (L" (boot only)");
+      } else {
+        Print (L" (runtime only)");
+      }
+    }
+    
+    if ((Attributes & ~BOOT_HELPER_NVRAM_NORMAL_ATTR) != 0) {
+      Print(L" (extra: 0x%08x)", Attributes);
+    }
+    
     Print(L"\n");
 
     FreePool(Data);
@@ -320,8 +343,6 @@ ListVars (
   }
 }
 
-STATIC UINT32 gFlags = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE;
-
 EFI_STATUS
 ToggleOrSetVar(
   IN CHAR16     *Name,
@@ -350,7 +371,7 @@ ToggleOrSetVar(
   {
     if (Toggle)
     {
-      gRT->SetVariable (Name, Guid, gFlags, 0, NULL);
+      gRT->SetVariable (Name, Guid, BOOT_HELPER_NVRAM_NV_ATTR, 0, NULL);
       if (!mInteractive) Print(L"Deleting %s\n", Name);
     }
     else
@@ -360,7 +381,7 @@ ToggleOrSetVar(
   }
   else
   {
-    gRT->SetVariable (Name, Guid, gFlags, PreferredSize, PreferredValue);
+    gRT->SetVariable (Name, Guid, BOOT_HELPER_NVRAM_NV_ATTR, PreferredSize, PreferredValue);
     if (!mInteractive) Print(L"Setting %s\n", Name);
   }
 

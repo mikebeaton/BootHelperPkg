@@ -137,7 +137,7 @@ BhMain ()
 
     SetColour(EFI_LIGHTMAGENTA);
     Print(L"macOS NVRAM Boot Helper\n");
-    Print(L"0.3.0 guid\n");
+    Print(L"0.3.2\n");
     SetColour(EFI_WHITE);
 
 #if 0
